@@ -55,6 +55,12 @@ export const createProfile = async (req, res) => {
 export const getProfile = async (req, res) => {
     try {
         const user_id = req.user?.id;
+        if (!user_id) {
+            res.status(401).json({
+                msg: "Unauthorized"
+            });
+            return;
+        }
         const profile = await pool.query('SELECT * FROM profiles WHERE user_id =$1', [user_id]);
         if (profile.rows.length === 0) {
             res.status(401).json({

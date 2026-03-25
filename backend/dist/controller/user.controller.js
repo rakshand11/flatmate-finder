@@ -9,13 +9,13 @@ export const registerUser = async (req, res) => {
         const { email, password, phone } = req.body;
         if (!email || !password || !phone) {
             res.status(400).json({
-                msg: "All fields should fill"
+                msg: "All fields should be filled"
             });
             return;
         }
         const existingUser = await pool.query('SELECT * FROM users WHERE email=$1', [email]);
         if (existingUser.rows.length) {
-            res.status(400).json({
+            res.status(401).json({
                 msg: "User already exist"
             });
         }
@@ -37,10 +37,16 @@ export const registerUser = async (req, res) => {
 export const loginController = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await pool.query('SELECT * FROM users WHERE email=$1', [email]);
+        if (!email || !password) {
+            res.status(400).json({
+                msg: "email and password must be filled"
+            });
+            return;
+        }
+        const user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
         if (user.rows.length === 0) {
             res.status(401).json({
-                msg: "User not found"
+                msg: "User not exist"
             });
             return;
         }
@@ -59,12 +65,11 @@ export const loginController = async (req, res) => {
             maxAge: 30 * 24 * 60 * 60 * 1000
         });
         res.status(200).json({
-            msg: "Logged in successfully"
+            msg: "User logged in successfully"
         });
         return;
     }
     catch (error) {
-        console.log("error", error);
         res.status(500).json({
             msg: "Internal server error"
         });
