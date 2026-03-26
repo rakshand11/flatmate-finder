@@ -103,4 +103,34 @@ export const getMessages = async (req, res) => {
         });
     }
 };
+export const getChatList = async (req, res) => {
+    const user_id = req.user?.id;
+    if (!user_id) {
+        return res.status(401).json({ msg: "Unauthorized" });
+    }
+    try {
+        const chats = await pool.query(`
+        SELECT DISTINCT
+          m.id AS match_id,
+          m.user1_id,
+          m.user2_id,
+          p.name AS other_user_name,
+          MAX(ms.sent_at) AS last_message_time
+        FROM matches m
+        JOIN profiles p
+          ON (m.user1_id = $1 AND m.user2_id = p.user_id)
+          OR (m.user2_id = $1 AND m.user1_id = p.user_id)
+        JOIN messages ms ON ms.match_id = m.id
+        WHERE m.is_active = TRUE
+          AND (m.user1_id = $1 OR m.user2_id = $1)
+        GROUP BY m.id, m.user1_id, m.user2_id, p.name
+        ORDER BY last_message_time DESC
+        `, [user_id]);
+        return res.status(200).json({ chats: chats.rows });
+    }
+    catch (error) {
+        console.log("getChatList error detail:", error);
+        return res.status(500).json({ msg: "Internal server error" });
+    }
+};
 //# sourceMappingURL=message.controller.js.map
