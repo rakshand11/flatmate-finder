@@ -20,12 +20,13 @@ export const registerUser = async (req: Request, res: Response) => {
             res.status(401).json({
                 msg: "User already exist"
             })
+            return
         }
         const password_hash = await bcrypt.hash(password, 10)
         const createUser = await pool.query('INSERT INTO users(email,password_hash,phone) VALUES($1,$2,$3) RETURNING *', [email, password_hash, phone])
         res.status(201).json({
             msg: "user created successfully",
-            createUser
+            user: createUser.rows[0]
         })
         return
 

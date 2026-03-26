@@ -127,4 +127,28 @@ export const getProfileById = async (req, res) => {
         });
     }
 };
+export const getBrowseProfiles = async (req, res) => {
+    try {
+        const user_id = req.user?.id;
+        if (!user_id) {
+            return res.status(401).json({ msg: "Unauthorized" });
+        }
+        const profiles = await pool.query(`SELECT * FROM profiles 
+             WHERE user_id != $1 
+             AND user_id NOT IN (
+                 SELECT swiped_id FROM swipes WHERE swiper_id = $1
+             )
+             LIMIT 20`, [user_id]);
+        return res.status(200).json({
+            msg: "Profiles fetched",
+            profiles: profiles.rows
+        });
+    }
+    catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            msg: "Internal server error"
+        });
+    }
+};
 //# sourceMappingURL=profile.controller.js.map

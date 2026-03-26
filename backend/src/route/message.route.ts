@@ -5,4 +5,4 @@ import { getMessages, sendMessage } from "../controller/message.controller.js";
 export const messageRouter = Router()
 
 messageRouter.post("/send-message", userMiddleware, sendMessage)
-messageRouter.get("/get-message", userMiddleware, getMessages)
+messageRouter.get("/get-message/:match_id", userMiddleware, getMessages)
