@@ -27,7 +27,7 @@ export const registerUser = async (req: Request, res: Response) => {
             [email, password_hash, phone]
         )
 
-        // fix 1 - set cookie on register too!
+
         const token = jwt.sign(
             { id: createUser.rows[0].id, email: createUser.rows[0].email },
             jwt_Secret,
@@ -35,7 +35,8 @@ export const registerUser = async (req: Request, res: Response) => {
         )
         res.cookie("userToken", token, {
             httpOnly: true,
-            sameSite: "lax",   // fix 2 - use lax not none for localhost
+            sameSite: "lax",
+            secure: true,
             maxAge: 30 * 24 * 60 * 60 * 1000
         })
         res.status(201).json({
@@ -77,7 +78,8 @@ export const loginController = async (req: Request, res: Response) => {
         )
         res.cookie("userToken", token, {
             httpOnly: true,
-            sameSite: "lax",   // fix 2 - lax for localhost
+            sameSite: "lax",
+            secure: true,
             maxAge: 30 * 24 * 60 * 60 * 1000
         })
         res.status(200).json({
@@ -93,7 +95,7 @@ export const logoutUser = async (req: Request, res: Response) => {
     try {
         res.clearCookie("userToken", {
             httpOnly: true,
-            sameSite: "lax",   // fix 2 - must match what was set
+            sameSite: "lax",
         })
         res.status(200).json({ msg: "Logout successfully" })
         return

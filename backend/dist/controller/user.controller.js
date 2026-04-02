@@ -18,11 +18,11 @@ export const registerUser = async (req, res) => {
         }
         const password_hash = await bcrypt.hash(password, 10);
         const createUser = await pool.query('INSERT INTO users(email,password_hash,phone) VALUES($1,$2,$3) RETURNING *', [email, password_hash, phone]);
-        // fix 1 - set cookie on register too!
         const token = jwt.sign({ id: createUser.rows[0].id, email: createUser.rows[0].email }, jwt_Secret, { expiresIn: "30d" });
         res.cookie("userToken", token, {
             httpOnly: true,
-            sameSite: "lax", // fix 2 - use lax not none for localhost
+            sameSite: "lax",
+            secure: true,
             maxAge: 30 * 24 * 60 * 60 * 1000
         });
         res.status(201).json({
@@ -56,7 +56,8 @@ export const loginController = async (req, res) => {
         const token = jwt.sign({ id: user.rows[0].id, email: user.rows[0].email }, jwt_Secret, { expiresIn: "30d" });
         res.cookie("userToken", token, {
             httpOnly: true,
-            sameSite: "lax", // fix 2 - lax for localhost
+            sameSite: "lax",
+            secure: true,
             maxAge: 30 * 24 * 60 * 60 * 1000
         });
         res.status(200).json({
@@ -72,7 +73,7 @@ export const logoutUser = async (req, res) => {
     try {
         res.clearCookie("userToken", {
             httpOnly: true,
-            sameSite: "lax", // fix 2 - must match what was set
+            sameSite: "lax",
         });
         res.status(200).json({ msg: "Logout successfully" });
         return;

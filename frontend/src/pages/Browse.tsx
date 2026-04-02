@@ -1,6 +1,6 @@
-
 import { useEffect, useState } from "react";
 import API from "../api/axios";
+
 
 interface Profile {
     user_id: string;
@@ -30,7 +30,7 @@ export default function BrowsePage() {
 
     const showToast = (msg: string, type: Toast["type"]) => {
         setToast({ msg, type });
-        setTimeout(() => setToast(null), 2500);
+        setTimeout(() => setToast(null), 2800);
     };
 
     useEffect(() => {
@@ -67,133 +67,176 @@ export default function BrowsePage() {
         }
     };
 
+
     if (loading)
         return (
-            <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-orange-50 via-white to-orange-50">
-                <div className="flex items-center gap-3 rounded-full bg-white px-5 py-2 shadow-sm">
-                    <span className="h-3 w-3 animate-ping rounded-full bg-orange-400" />
-                    <p className="text-sm text-gray-500">Loading profiles for you…</p>
+            <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-orange-50 flex flex-col items-center justify-center gap-6">
+                <div className="relative">
+                    <div className="absolute -inset-4 rounded-full bg-orange-200/50 blur-2xl animate-pulse" />
+                    <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-orange-400 to-pink-400 shadow-xl shadow-orange-300/50">
+                        <div className="h-8 w-8 rounded-full border-4 border-white/40 border-t-white animate-spin" />
+                    </div>
                 </div>
+                <p className="text-base font-semibold text-gray-500 tracking-wide">Finding flatmates near you…</p>
             </div>
         );
 
     const profile = profiles[current];
 
-    const toastStyles = {
-        match: "bg-gradient-to-r from-green-500 to-emerald-500 shadow-green-400/30",
-        like: "bg-gradient-to-r from-orange-500 to-pink-500 shadow-orange-400/30",
-        pass: "bg-gradient-to-r from-gray-400 to-gray-500 shadow-gray-400/20",
+    const toastStyles: Record<Toast["type"], string> = {
+        match: "bg-gradient-to-r from-emerald-500 to-green-500 shadow-emerald-300/60",
+        like: "bg-gradient-to-r from-orange-500 to-pink-500 shadow-orange-300/60",
+        pass: "bg-gradient-to-r from-gray-400 to-slate-500 shadow-gray-300/40",
     };
 
+
     return (
-        <div className="flex min-h-screen flex-col bg-gradient-to-b from-orange-50 via-white to-orange-50 px-4 py-4">
+        <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-orange-50 relative overflow-hidden">
+            {/* Soft ambient blobs — matches homepage */}
+            <div className="pointer-events-none absolute inset-0 -z-10">
+                <div className="absolute -top-32 -right-24 h-72 w-72 animate-pulse rounded-full bg-orange-200/40 blur-3xl" />
+                <div className="absolute -bottom-32 -left-24 h-72 w-72 animate-pulse rounded-full bg-pink-100/50 blur-3xl" />
+            </div>
+
+
+
             {/* Toast */}
             <div
-                className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${toast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"
+                className={`fixed top-6 left-1/2 z-50 -translate-x-1/2 transition-all duration-500 ${toast
+                    ? "opacity-100 translate-y-0 scale-100"
+                    : "opacity-0 -translate-y-4 scale-95 pointer-events-none"
                     }`}
             >
                 {toast && (
                     <div
-                        className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-medium text-white shadow-lg ${toastStyles[toast.type]
-                            }`}
+                        className={`flex items-center gap-3 rounded-2xl px-8 py-4 text-sm font-bold text-white shadow-2xl border border-white/30 backdrop-blur-xl ${toastStyles[toast.type]}`}
                     >
+                        <span className="h-2 w-2 rounded-full bg-white animate-ping" />
                         {toast.msg}
                     </div>
                 )}
             </div>
 
-            {/* Top bar */}
-            <header className="mx-auto flex w-full max-w-md items-center justify-between pb-4">
-                <div className="flex items-center gap-3 text-xs text-gray-400">
-                    <span className="flex items-center gap-1">
-                        <span className="h-2 w-2 rounded-full bg-green-400" />
-                        Online
-                    </span>
-                    <span className="rounded-full bg-white/70 px-3 py-1 shadow-sm">
-                        {profiles.length} left
-                    </span>
-                </div>
-            </header>
+            {/* ── Main ── */}
+            <main className="mx-auto flex max-w-lg flex-col items-center px-4 pb-24 pt-8">
 
-            <main className="flex flex-1 flex-col items-center justify-center px-4">
-                {/* Title + branding */}
-                <div className="mb-5 text-center">
-                    <h1 className="text-2xl font-bold text-gray-800">
-                        Find your flatmate
-
-                    </h1>
-                    <p className="text-sm text-gray-500">Swipe right to like, left to pass.</p>
+                {/* Page header */}
+                <div className="mb-8 w-full flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+                            Browse <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">Flatmates</span>
+                        </h1>
+                        <p className="text-sm text-gray-500 mt-0.5">Swipe right to like, left to pass</p>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-2xl bg-white/80 border border-orange-100 shadow-sm px-4 py-2 backdrop-blur-sm">
+                        <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                        <span className="text-sm font-semibold text-gray-700">{profiles.length} left</span>
+                    </div>
                 </div>
 
+                {/* Hint pill */}
+                <div className="mb-6 inline-flex items-center gap-3 rounded-full bg-white/80 border border-orange-100 shadow-sm px-5 py-2 text-xs font-semibold text-gray-500 backdrop-blur-sm">
+                    <span>👈 Pass</span>
+                    <div className="h-px w-8 bg-gradient-to-r from-transparent via-orange-300 to-transparent" />
+                    <span>Like ❤️ 👉</span>
+                </div>
+
+                {/* ── Empty state ── */}
                 {!profile ? (
-                    <div className="flex w-full max-w-md flex-col items-center rounded-3xl bg-white/80 p-10 text-center shadow-lg shadow-orange-100">
-                        <p className="mb-3 text-4xl">😴</p>
-                        <p className="text-gray-600">You're all caught up!</p>
-                        <p className="mt-1 text-xs text-gray-400">
-                            No more profiles for now. New people join every day.
+                    <div className="w-full rounded-3xl bg-white/80 border border-orange-100/60 shadow-xl shadow-orange-100/50 backdrop-blur-sm p-12 text-center">
+                        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-orange-100 to-pink-100 shadow-inner">
+                            <span className="text-5xl">✨</span>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-3">You're all caught up!</h2>
+                        <p className="text-gray-500 mb-8 leading-relaxed max-w-xs mx-auto">
+                            New flatmates join every day. Check back tomorrow for fresh profiles!
                         </p>
+                        <a
+                            href="/matches"
+                            className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 px-8 py-3 text-sm font-bold text-white shadow-lg shadow-orange-300/50 hover:shadow-xl hover:shadow-orange-400/50 hover:-translate-y-0.5 transition-all duration-200"
+                        >
+                            See your matches →
+                        </a>
                     </div>
                 ) : (
                     <>
-                        {/* Card */}
-                        <div className="relative w-full max-w-md mt-4">
-                            <div className="pointer-events-none absolute inset-x-6 -bottom-3 -top-3 -z-10 rounded-[32px] bg-gradient-to-b from-orange-200/40 via-transparent to-orange-200/40 blur-xl" />
-                            <div className="overflow-hidden rounded-3xl bg-white shadow-xl shadow-orange-200/60 ring-1 ring-orange-100">
-                                {/* Photo */}
-                                <div className="relative h-80 w-full bg-orange-100">
+                        {/* ── Profile Card ── */}
+                        <div className="w-full group/card relative">
+                            {/* Glow halo */}
+                            <div className="pointer-events-none absolute -inset-2 rounded-3xl bg-gradient-to-r from-orange-300/30 to-pink-300/30 blur-xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 -z-10" />
+
+                            <div className="overflow-hidden rounded-3xl bg-white/90 border border-orange-100/80 shadow-2xl shadow-orange-200/40 backdrop-blur-sm hover:-translate-y-1 transition-all duration-300">
+
+                                {/* ── Photo ── */}
+                                <div className="relative h-80 w-full overflow-hidden bg-gradient-to-br from-orange-100 to-pink-100">
                                     {profile.photo_url ? (
                                         <img
                                             src={profile.photo_url}
                                             alt={profile.name}
-                                            className="h-full w-full object-cover"
+                                            className="h-full w-full object-cover group-hover/card:scale-105 transition-transform duration-500"
                                         />
                                     ) : (
                                         <div className="flex h-full items-center justify-center">
-                                            <span className="text-6xl">👤</span>
+                                            <span className="text-8xl">👤</span>
                                         </div>
                                     )}
-                                    <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-between p-4 text-[11px] text-white">
-                                        <span className="rounded-full bg-black/30 px-3 py-1 backdrop-blur">
-                                            {profile.locality}, {profile.city}
+
+                                    {/* Top badges */}
+                                    <div className="pointer-events-none absolute inset-x-0 top-5 flex justify-between px-5">
+                                        <span className="rounded-2xl bg-white/90 backdrop-blur-sm border border-white/60 px-4 py-2 text-xs font-bold text-gray-700 shadow-sm">
+                                            📍 {profile.locality}, {profile.city}
                                         </span>
-                                        <span className="rounded-full bg-black/30 px-3 py-1 backdrop-blur">
-                                            ₹{profile.budget_min}–{profile.budget_max}
+                                        <span className="rounded-2xl bg-gradient-to-r from-emerald-500 to-green-500 px-4 py-2 text-xs font-bold text-white shadow-lg">
+                                            ₹{profile.budget_min}k–{profile.budget_max}k
                                         </span>
                                     </div>
-                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+
+                                    {/* Bottom fade */}
+                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white/90 to-transparent" />
                                 </div>
 
-                                {/* Content */}
-                                <div className="space-y-3 p-5">
+                                {/* ── Info ── */}
+                                <div className="px-7 pt-4 pb-6 space-y-5">
+                                    {/* Name row */}
                                     <div className="flex items-start justify-between">
                                         <div>
-                                            <h2 className="text-xl font-semibold text-gray-900">
-                                                {profile.name}, {profile.age}
+                                            <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight">
+                                                {profile.name}
                                             </h2>
-                                            {profile.occupation && (
-                                                <p className="mt-0.5 text-xs font-medium uppercase tracking-[0.15em] text-orange-400">
-                                                    {profile.occupation}
-                                                </p>
-                                            )}
+                                            <div className="mt-1 flex items-center gap-2">
+                                                <span className="text-sm text-gray-500">{profile.age} yrs</span>
+                                                {profile.occupation && (
+                                                    <>
+                                                        <span className="text-gray-300">·</span>
+                                                        <span className="rounded-full bg-orange-50 border border-orange-200/60 px-3 py-0.5 text-xs font-semibold text-orange-600">
+                                                            {profile.occupation}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col items-end text-[11px] text-gray-400">
-                                            <span>Budget per month</span>
-                                            <span className="font-semibold text-gray-700">
-                                                ₹{profile.budget_min.toLocaleString()} – {profile.budget_max.toLocaleString()}
-                                            </span>
+                                        <div className="text-right">
+                                            <p className="text-xs text-gray-400 mb-0.5">Budget / mo</p>
+                                            <p className="text-base font-bold text-emerald-600">
+                                                ₹{profile.budget_min.toLocaleString()}–{profile.budget_max.toLocaleString()}
+                                            </p>
                                         </div>
                                     </div>
 
+                                    {/* Bio */}
                                     {profile.bio && (
-                                        <p className="text-sm text-gray-600 line-clamp-3">{profile.bio}</p>
+                                        <p className="text-sm text-gray-600 leading-relaxed rounded-2xl bg-orange-50/60 border border-orange-100/60 p-4">
+                                            {profile.bio}
+                                        </p>
                                     )}
 
+                                    {/* Lifestyle tags */}
                                     {profile.lifestyle_tags?.length > 0 && (
-                                        <div className="flex flex-wrap gap-1.5">
+                                        <div className="flex flex-wrap gap-2">
                                             {profile.lifestyle_tags.map((tag) => (
                                                 <span
                                                     key={tag}
-                                                    className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-medium text-orange-500"
+                                                    className="rounded-full bg-white border border-orange-200/70 px-3 py-1 text-xs font-semibold text-gray-600 shadow-sm hover:bg-orange-50 hover:border-orange-300 transition-colors duration-150"
                                                 >
                                                     {tag}
                                                 </span>
@@ -202,49 +245,57 @@ export default function BrowsePage() {
                                     )}
                                 </div>
 
-                                {/* Swipe buttons */}
-                                <div className="flex items-center justify-between gap-4 border-t border-orange-50 px-5 py-4">
-                                    <button
-                                        onClick={() => swipe("left")}
-                                        disabled={swiping}
-                                        className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-gray-200 bg-white text-xl text-gray-400 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-400 disabled:opacity-60"
-                                    >
-                                        ✕
-                                    </button>
-                                    <span className="text-[11px] text-gray-400">
-                                        Tap ♥ to like, ✕ to pass
-                                    </span>
-                                    <button
-                                        onClick={() => swipe("right")}
-                                        disabled={swiping}
-                                        className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-orange-500 to-pink-500 text-xl text-white shadow-lg shadow-orange-400/40 transition hover:-translate-y-0.5 hover:shadow-orange-500/50 disabled:opacity-60"
-                                    >
-                                        ♥
-                                    </button>
+                                {/* ── Swipe Buttons ── */}
+                                <div className="border-t border-orange-100/60 bg-orange-50/40 px-7 py-5">
+                                    <div className="flex items-center justify-between gap-4">
+                                        {/* Pass */}
+                                        <button
+                                            onClick={() => swipe("left")}
+                                            disabled={swiping}
+                                            className="group flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 bg-white py-4 text-sm font-bold text-gray-500 shadow-sm hover:border-red-300 hover:bg-red-50 hover:text-red-500 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                                        >
+                                            <span className="text-lg group-hover:-rotate-12 transition-transform duration-200">✕</span>
+                                            Pass
+                                        </button>
+
+                                        {/* Like */}
+                                        <button
+                                            onClick={() => swipe("right")}
+                                            disabled={swiping}
+                                            className="group flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 via-orange-600 to-pink-500 py-4 text-sm font-bold text-white shadow-lg shadow-orange-300/50 hover:shadow-xl hover:shadow-orange-400/60 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                                        >
+                                            <span className="text-lg group-hover:scale-125 transition-transform duration-200">❤️</span>
+                                            Like
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Navigation */}
-                        <div className="mt-6 flex items-center justify-center gap-4">
+                        {/* ── Profile counter ── */}
+                        <div className="mt-8 flex items-center gap-5 rounded-2xl bg-white/80 border border-orange-100 shadow-sm px-6 py-3 backdrop-blur-sm">
                             <button
                                 disabled={current === 0}
-                                onClick={() => setCurrent((prev) => (prev > 0 ? prev - 1 : prev))}
-                                className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 shadow-sm transition hover:border-orange-200 hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
+                                onClick={() => setCurrent((prev) => Math.max(prev - 1, 0))}
+                                className="flex h-9 w-9 items-center justify-center rounded-xl border border-orange-200 bg-white text-gray-500 shadow-sm hover:bg-orange-50 hover:text-orange-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
                             >
-                                ← Previous
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
                             </button>
-                            <span className="text-xs text-gray-400">
-                                {current + 1} / {profiles.length}
+
+                            <span className="text-sm font-bold text-gray-700 min-w-[64px] text-center">
+                                {current + 1} <span className="text-gray-400 font-normal">of</span> {profiles.length}
                             </span>
+
                             <button
                                 disabled={current >= profiles.length - 1}
-                                onClick={() =>
-                                    setCurrent((prev) => (prev < profiles.length - 1 ? prev + 1 : prev))
-                                }
-                                className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500 shadow-sm transition hover:border-orange-200 hover:text-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
+                                onClick={() => setCurrent((prev) => Math.min(prev + 1, profiles.length - 1))}
+                                className="flex h-9 w-9 items-center justify-center rounded-xl border border-orange-200 bg-white text-gray-500 shadow-sm hover:bg-orange-50 hover:text-orange-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
                             >
-                                Next →
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
                             </button>
                         </div>
                     </>
