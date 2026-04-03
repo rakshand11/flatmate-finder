@@ -20,11 +20,11 @@ export default function ChatPage() {
     const bottomRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        API.get("http://localhost:5000/profile/get")
+        API.get("/profile/get")
             .then((res) => setMyId(res.data.profile?.user_id || ""))
             .catch(console.error);
 
-        API.get(`http://localhost:5000/message/get-message/${match_id}`)
+        API.get(`/message/get-message/${match_id}`)
             .then((res) => setMessages(res.data.messages || []))
             .catch(console.error)
             .finally(() => setLoading(false));

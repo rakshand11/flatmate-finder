@@ -49,7 +49,7 @@ export default function CreateProfile() {
         }
         setLoading(true);
         try {
-            await API.post("http://localhost:5000/profile/create", {
+            await API.post("/profile/create", {
                 ...form,
                 age: Number(form.age),
                 budget_min: Number(form.budget_min),

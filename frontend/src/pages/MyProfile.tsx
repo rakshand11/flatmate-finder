@@ -22,7 +22,7 @@ export default function MyProfilePage() {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        API.get("http://localhost:5000/profile/get")
+        API.get("/profile/get")
             .then((res) => setProfile(res.data.profile))
             .catch((err) => setError(err.response?.data?.msg || "Failed to load profile"))
             .finally(() => setLoading(false));

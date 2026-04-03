@@ -18,7 +18,7 @@ export default function MatchesPage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        API.get("http://localhost:5000/matches/get")
+        API.get("/matches/get")
             .then((res) => setMatches(res.data.matches || []))
             .catch(console.error)
             .finally(() => setLoading(false));

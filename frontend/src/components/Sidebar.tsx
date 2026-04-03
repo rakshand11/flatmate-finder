@@ -13,7 +13,7 @@ export default function Sidebar() {
     ];
 
     const logout = async () => {
-        await API.post("http://localhost:5000/user/logout");
+        await API.post("/user/logout");
         navigate("/login");
     };
 
@@ -44,8 +44,8 @@ export default function Sidebar() {
                             key={item.to}
                             to={item.to}
                             className={`group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${isActive
-                                    ? "bg-gradient-to-r from-orange-50 to-pink-50 border border-orange-200/70 shadow-md shadow-orange-100/60 text-orange-700"
-                                    : "text-gray-600 hover:text-orange-600 hover:bg-orange-50/70 border border-transparent hover:border-orange-100/60"
+                                ? "bg-gradient-to-r from-orange-50 to-pink-50 border border-orange-200/70 shadow-md shadow-orange-100/60 text-orange-700"
+                                : "text-gray-600 hover:text-orange-600 hover:bg-orange-50/70 border border-transparent hover:border-orange-100/60"
                                 }`}
                         >
                             {isActive && (
@@ -53,8 +53,8 @@ export default function Sidebar() {
                             )}
                             <span
                                 className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-base transition-all duration-200 ${isActive
-                                        ? "bg-gradient-to-br from-orange-100 to-pink-100 shadow-sm shadow-orange-200/50"
-                                        : "bg-gray-50 group-hover:bg-orange-100/60"
+                                    ? "bg-gradient-to-br from-orange-100 to-pink-100 shadow-sm shadow-orange-200/50"
+                                    : "bg-gray-50 group-hover:bg-orange-100/60"
                                     }`}
                             >
                                 {item.icon}
