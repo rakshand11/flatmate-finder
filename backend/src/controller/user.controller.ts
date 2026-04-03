@@ -7,6 +7,13 @@ dotenv.config()
 
 const jwt_Secret = process.env.JWT_SECRET || ""
 
+const cookieOptions = {
+    httpOnly: true,
+    sameSite: "none" as const,
+    secure: true,
+    maxAge: 30 * 24 * 60 * 60 * 1000
+}
+
 export const registerUser = async (req: Request, res: Response) => {
     try {
         const { email, password, phone } = req.body
@@ -26,19 +33,12 @@ export const registerUser = async (req: Request, res: Response) => {
             'INSERT INTO users(email,password_hash,phone) VALUES($1,$2,$3) RETURNING *',
             [email, password_hash, phone]
         )
-
-
         const token = jwt.sign(
             { id: createUser.rows[0].id, email: createUser.rows[0].email },
             jwt_Secret,
             { expiresIn: "30d" }
         )
-        res.cookie("userToken", token, {
-            httpOnly: true,
-            sameSite: "lax",
-            secure: true,
-            maxAge: 30 * 24 * 60 * 60 * 1000
-        })
+        res.cookie("userToken", token, cookieOptions)
         res.status(201).json({
             msg: "User created successfully",
             user: createUser.rows[0]
@@ -76,12 +76,7 @@ export const loginController = async (req: Request, res: Response) => {
             jwt_Secret,
             { expiresIn: "30d" }
         )
-        res.cookie("userToken", token, {
-            httpOnly: true,
-            sameSite: "lax",
-            secure: true,
-            maxAge: 30 * 24 * 60 * 60 * 1000
-        })
+        res.cookie("userToken", token, cookieOptions)
         res.status(200).json({
             msg: "User logged in successfully"
         })
@@ -95,7 +90,8 @@ export const logoutUser = async (req: Request, res: Response) => {
     try {
         res.clearCookie("userToken", {
             httpOnly: true,
-            sameSite: "lax",
+            sameSite: "none" as const,
+            secure: true,
         })
         res.status(200).json({ msg: "Logout successfully" })
         return
