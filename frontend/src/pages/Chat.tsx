@@ -38,7 +38,7 @@ export default function ChatPage() {
         e.preventDefault();
         if (!content.trim()) return;
         try {
-            const res = await API.post("http://localhost:5000/message/send-message", { match_id, content });
+            const res = await API.post("/message/send-message", { match_id, content });
             setMessages((prev) => [...prev, res.data.message]);
             setContent("");
         } catch (err) {

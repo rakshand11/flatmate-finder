@@ -1,7 +1,6 @@
 import type { Request, Response } from "express"
 import pool from "../db.js"
 
-// ✅ SEND MESSAGE
 export const sendMessage = async (req: Request, res: Response) => {
     try {
         const sender_id = req.user?.id
