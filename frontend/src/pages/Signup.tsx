@@ -2,8 +2,19 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import API from "../api/axios";
 
+const FONT_IMPORT = `
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+`;
+
 const inputCls =
-    "w-full pl-11 pr-4 py-3.5 rounded-2xl border border-orange-100/80 bg-orange-50/40 text-sm text-gray-800 placeholder-gray-400 outline-none transition focus:ring-2 focus:ring-orange-300/60 focus:border-orange-300 focus:bg-white";
+    "w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-[#2A2438] bg-[#211C2E] text-[15px] text-[#F4F1FF] placeholder-[#6E6585] outline-none transition-colors focus:border-[#C8FF4D] disabled:opacity-60";
+
+const TAGS = [
+    { label: "🐶 Pet friendly", rotate: "-rotate-6", pos: "top-8 -left-16" },
+    { label: "🎮 Gamer", rotate: "rotate-3", pos: "top-24 -right-20" },
+    { label: "🌙 Night owl", rotate: "rotate-6", pos: "bottom-32 -left-24" },
+    { label: "🧹 Clean freak", rotate: "-rotate-3", pos: "bottom-12 -right-16" },
+];
 
 export default function SignupPage() {
     const navigate = useNavigate();
@@ -17,146 +28,153 @@ export default function SignupPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
-        if (!form.email.trim()) { setError("Please enter your email."); return; }
-        if (!form.password) { setError("Please enter a password."); return; }
+        if (!form.email.trim()) { setError("Drop your email first 👀"); return; }
+        if (!form.password) { setError("Pick a password, fam."); return; }
         setLoading(true);
         try {
             await API.post("/user/register", form);
             navigate("/create-profile");
         } catch (err: any) {
-            setError(err.response?.data?.msg || "Something went wrong. Please try again.");
+            setError(err.response?.data?.msg || "Something went wrong. Try again.");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-orange-50 flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
-            {/* Ambient blobs */}
-            <div className="pointer-events-none absolute inset-0 -z-10">
-                <div className="absolute -top-32 -right-24 h-72 w-72 animate-pulse rounded-full bg-orange-200/40 blur-3xl" />
-                <div className="absolute -bottom-32 -left-24 h-72 w-72 animate-pulse rounded-full bg-pink-100/50 blur-3xl" />
+        <div className="min-h-screen w-full bg-[#15111F] flex items-center justify-center px-4 py-12 relative overflow-hidden">
+            <style>{FONT_IMPORT}</style>
+
+            {/* Ambient glow blobs */}
+            <div className="pointer-events-none absolute inset-0 -z-0">
+                <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-[#C8FF4D]/10 blur-[100px]" />
+                <div className="absolute -bottom-40 -right-32 h-96 w-96 rounded-full bg-[#FF6B6B]/15 blur-[100px]" />
             </div>
 
-            <div className="w-full max-w-sm space-y-8">
+            <div className="relative w-full max-w-sm" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
 
-                {/* Logo & header */}
-                <div className="text-center">
-                    <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-orange-400 to-pink-400 shadow-xl shadow-orange-300/50">
-                        <span className="text-3xl">🏠</span>
-                    </div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-                        Join{" "}
-                        <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-                            Flatmate
-                        </span>
-                    </h1>
-                    <p className="mt-2 text-sm text-gray-500">
-                        Create your account and start matching
-                    </p>
+                {/* Card stack behind form — tinder deck illusion */}
+                <div className="absolute inset-0 -z-10 hidden sm:block">
+                    <div className="absolute top-6 left-6 right-6 bottom-0 rounded-[28px] bg-[#2A2438] rotate-[6deg] opacity-60" />
+                    <div className="absolute top-3 left-3 right-3 bottom-0 rounded-[28px] bg-[#382F4D] rotate-[-3deg] opacity-80" />
                 </div>
 
-                {/* Card */}
-                <div className="rounded-3xl bg-white/90 border border-orange-100/60 shadow-2xl shadow-orange-200/40 backdrop-blur-sm p-8">
+                {/* Floating tag chips */}
+                {TAGS.map((tag) => (
+                    <div
+                        key={tag.label}
+                        className={`hidden lg:flex absolute ${tag.pos} ${tag.rotate} items-center px-4 py-2 rounded-full bg-[#211C2E] border border-[#3A324D] text-xs text-[#C8FF4D] shadow-lg shadow-black/40`}
+                        style={{ fontFamily: "'Space Mono', monospace" }}
+                    >
+                        {tag.label}
+                    </div>
+                ))}
+
+                {/* Main card */}
+                <div className="relative rounded-[28px] bg-[#1D1829] border border-[#2E2640] shadow-2xl shadow-black/60 p-8 z-10">
+
+                    {/* Eyebrow */}
+                    <div className="flex items-center gap-2 mb-6">
+                        <span className="inline-block h-2 w-2 rounded-full bg-[#C8FF4D] animate-pulse" />
+                        <span
+                            className="text-xs uppercase tracking-[0.2em] text-[#9D93B8]"
+                            style={{ fontFamily: "'Space Mono', monospace" }}
+                        >
+                            Roommate hunt starts here
+                        </span>
+                    </div>
+
+                    {/* Header */}
+                    <h1 className="text-4xl font-bold text-[#F4F1FF] leading-tight mb-1">
+                        Find your<br />
+                        <span className="text-[#C8FF4D]">person.</span>
+                    </h1>
+                    <p className="text-sm text-[#9D93B8] mb-7">
+                        Swipe, match, move in. No awkward intros.
+                    </p>
 
                     {/* Error */}
                     {error && (
-                        <div className="mb-6 flex items-center gap-3 rounded-2xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">
-                            <span>⚠️</span> {error}
+                        <div
+                            className="mb-5 rounded-xl bg-[#FF6B6B]/10 border border-[#FF6B6B]/30 px-4 py-3 text-sm text-[#FF8A8A]"
+                            style={{ fontFamily: "'Space Mono', monospace" }}
+                        >
+                            {error}
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-4">
 
                         {/* Email */}
-                        <div>
-                            <label className="mb-1.5 block text-sm font-semibold text-gray-700">
-                                Email address
-                            </label>
-                            <div className="relative">
-                                <svg className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                                </svg>
-                                <input
-                                    type="email" name="email" value={form.email}
-                                    onChange={handleChange} required
-                                    placeholder="you@gmail.com"
-                                    className={inputCls}
-                                />
-                            </div>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6E6585] text-sm">@</span>
+                            <input
+                                type="email" name="email" value={form.email}
+                                onChange={handleChange} required disabled={loading}
+                                placeholder="you@gmail.com"
+                                className={inputCls}
+                            />
                         </div>
 
                         {/* Phone */}
-                        <div>
-                            <label className="mb-1.5 block text-sm font-semibold text-gray-700">
-                                Phone number
-                            </label>
-                            <div className="relative">
-                                <svg className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                </svg>
-                                <input
-                                    type="tel" name="phone" value={form.phone}
-                                    onChange={handleChange}
-                                    placeholder="9999999999"
-                                    className={inputCls}
-                                />
-                            </div>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6E6585]">📱</span>
+                            <input
+                                type="tel" name="phone" value={form.phone}
+                                onChange={handleChange} disabled={loading}
+                                placeholder="98765 43210"
+                                className={inputCls}
+                            />
                         </div>
 
                         {/* Password */}
-                        <div>
-                            <label className="mb-1.5 block text-sm font-semibold text-gray-700">
-                                Password
-                            </label>
-                            <div className="relative">
-                                <svg className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                                <input
-                                    type="password" name="password" value={form.password}
-                                    onChange={handleChange} required
-                                    placeholder="••••••••"
-                                    className={inputCls}
-                                />
-                            </div>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6E6585]">🔒</span>
+                            <input
+                                type="password" name="password" value={form.password}
+                                onChange={handleChange} required disabled={loading}
+                                placeholder="Make it a good one"
+                                className={inputCls}
+                            />
                         </div>
 
                         {/* Submit */}
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full rounded-2xl bg-gradient-to-r from-orange-500 via-orange-600 to-pink-500 py-4 text-sm font-bold text-white shadow-xl shadow-orange-300/50 hover:shadow-2xl hover:shadow-orange-400/50 hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                            className="w-full rounded-2xl bg-[#C8FF4D] py-4 text-sm font-bold text-[#15111F] tracking-wide
+                                       hover:shadow-[0_0_30px_4px_rgba(200,255,77,0.35)]
+                                       hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                         >
                             {loading ? (
                                 <span className="flex items-center justify-center gap-2">
-                                    <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                                    Creating account…
+                                    <span className="h-4 w-4 rounded-full border-2 border-[#15111F]/30 border-t-[#15111F] animate-spin" />
+                                    Setting things up…
                                 </span>
                             ) : (
-                                "Create account →"
+                                "Start swiping →"
                             )}
                         </button>
                     </form>
 
                     {/* Sign in link */}
-                    <div className="mt-6 pt-6 border-t border-orange-100/60 text-center text-sm text-gray-500">
-                        Already have an account?{" "}
-                        <Link
-                            to="/login"
-                            className="font-bold text-orange-500 hover:text-orange-600 transition-colors duration-150"
-                        >
-                            Sign in →
+                    <div className="mt-6 pt-6 border-t border-[#2E2640] text-center text-sm text-[#9D93B8]">
+                        Already on FlatMate?{" "}
+                        <Link to="/login" className="font-bold text-[#C8FF4D] hover:underline">
+                            Sign in
                         </Link>
                     </div>
                 </div>
 
                 {/* Terms */}
-                <p className="text-center text-xs text-gray-400">
-                    By signing up, you agree to our{" "}
-                    <span className="font-medium text-gray-500 hover:text-orange-500 cursor-pointer transition-colors">Terms</span>
-                    {" & "}
-                    <span className="font-medium text-gray-500 hover:text-orange-500 cursor-pointer transition-colors">Privacy Policy</span>
+                <p
+                    className="text-center text-[11px] text-[#6E6585] mt-6"
+                    style={{ fontFamily: "'Space Mono', monospace" }}
+                >
+                    By signing up you're cool with our{" "}
+                    <span className="text-[#9D93B8] underline cursor-pointer">Terms</span>
+                    {" "}+{" "}
+                    <span className="text-[#9D93B8] underline cursor-pointer">Privacy</span>
                 </p>
             </div>
         </div>

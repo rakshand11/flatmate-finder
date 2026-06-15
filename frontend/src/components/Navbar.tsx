@@ -1,79 +1,109 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 export default function Navbar() {
-
+    const [open, setOpen] = useState(false);
 
     return (
-        <nav className="backdrop-blur-xl bg-white/80 sticky top-0 z-50 border-b border-slate-200/50 shadow-sm shadow-slate-200/20">
-            <div className="px-6 py-4 max-w-7xl mx-auto flex items-center justify-between">
+        <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#0B0B0F]/80 backdrop-blur-xl">
+            <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
                 {/* Logo */}
                 <Link
                     to="/browse"
-                    className="group relative text-2xl font-black bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 bg-clip-text text-transparent hover:scale-105 transition-all duration-300"
+                    className="group relative text-2xl font-black tracking-tight text-white transition-transform duration-300 hover:scale-105"
                 >
-                    .findOne()
-                    <span className="absolute -bottom-1 left-0 w-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full group-hover:w-full transition-all duration-500" />
+                    flat<span className="text-[#C6FF3A]">mate</span>
+                    <span className="absolute -bottom-1 left-0 h-0.5 w-0 rounded-full bg-[#C6FF3A] transition-all duration-500 group-hover:w-full" />
                 </Link>
 
                 {/* Desktop Nav */}
-                <div className="hidden md:flex items-center gap-2">
-                    <Link
-                        to="/browse"
-                        className="group relative px-4 py-2 text-sm font-semibold text-slate-700 hover:text-purple-500 transition-all duration-200"
-                    >
-                        Browse
-                        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full group-hover:w-4/5 transition-all duration-300" />
-                    </Link>
-                    <Link
-                        to="/matches"
-                        className="group relative px-4 py-2 text-sm font-semibold text-slate-700 hover:text-purple-500 transition-all duration-200"
-                    >
-                        Matches
-                        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full group-hover:w-4/5 transition-all duration-300" />
-                    </Link>
-                    <Link
-                        to="/create-profile"
-                        className="group relative px-4 py-2 text-sm font-semibold text-slate-700 hover:text-purple-500 transition-all duration-200"
-                    >
-                        Profile
-                        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full group-hover:w-4/5 transition-all duration-300" />
-                    </Link>
+                <div className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1 md:flex">
+                    {[
+                        { to: "/browse", label: "Browse" },
+                        { to: "/matches", label: "Matches" },
+                        { to: "/create-profile", label: "Profile" },
+                    ].map((item) => (
+                        <Link
+                            key={item.to}
+                            to={item.to}
+                            className="relative rounded-full px-4 py-2 text-sm font-bold text-white/60 transition-colors duration-200 hover:text-white hover:bg-white/5"
+                        >
+                            {item.label}
+                        </Link>
+                    ))}
                 </div>
 
                 {/* Auth Buttons */}
-                <div className="flex items-center gap-3">
+                <div className="hidden items-center gap-3 md:flex">
                     <Link
                         to="/login"
-                        className="group relative px-4 py-2 text-sm font-semibold text-slate-600 hover:text-indigo-600 bg-slate-100/50 rounded-2xl hover:bg-indigo-50/50 backdrop-blur-sm border border-slate-200/50 shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2"
+                        className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-bold text-white/70 transition-all duration-200 hover:bg-white/[0.08] hover:text-white"
                     >
-                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                        </svg>
-                        Login
-                        <span className="absolute -inset-1 group-hover:bg-indigo-500/10 rounded-xl -z-10 scale-75 group-hover:scale-100 transition-all duration-200 blur-sm" />
+                        log in
                     </Link>
-
                     <Link
                         to="/signup"
-                        className="group relative px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 rounded-2xl shadow-lg shadow-indigo-300/40 hover:shadow-xl hover:shadow-indigo-400/50 backdrop-blur-sm border-0 transition-all duration-200 flex items-center gap-2 ml-1"
+                        className="group inline-flex items-center gap-1.5 rounded-full bg-[#C6FF3A] px-5 py-2 text-sm font-extrabold text-[#0B0B0F] transition-all duration-200 hover:shadow-[0_0_20px_2px_rgba(198,255,58,0.4)] active:scale-95"
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                        Sign up
-                        <span className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-xl -z-10 scale-75 group-hover:scale-100 transition-all duration-200 blur-sm" />
+                        sign up
+                        <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
                     </Link>
                 </div>
 
                 {/* Mobile menu button */}
-                <div className="md:hidden">
-                    <button className="p-2 rounded-xl bg-slate-100/50 hover:bg-slate-200/70 backdrop-blur-sm border border-slate-200/50 shadow-sm hover:shadow-md transition-all duration-200">
-                        <svg className="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button
+                    onClick={() => setOpen((v) => !v)}
+                    aria-label="Toggle menu"
+                    aria-expanded={open}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-white md:hidden"
+                >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {open ? (
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        ) : (
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
-                </div>
+                        )}
+                    </svg>
+                </button>
             </div>
+
+            {/* Mobile menu */}
+            {open && (
+                <div className="border-t border-white/10 bg-[#0B0B0F] px-5 py-4 md:hidden">
+                    <div className="flex flex-col gap-1">
+                        {[
+                            { to: "/browse", label: "Browse" },
+                            { to: "/matches", label: "Matches" },
+                            { to: "/create-profile", label: "Profile" },
+                        ].map((item) => (
+                            <Link
+                                key={item.to}
+                                to={item.to}
+                                onClick={() => setOpen(false)}
+                                className="rounded-xl px-3 py-2.5 text-sm font-bold text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                            >
+                                {item.label}
+                            </Link>
+                        ))}
+                    </div>
+                    <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3">
+                        <Link
+                            to="/login"
+                            onClick={() => setOpen(false)}
+                            className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2.5 text-center text-sm font-bold text-white/70 transition-colors hover:text-white"
+                        >
+                            log in
+                        </Link>
+                        <Link
+                            to="/signup"
+                            onClick={() => setOpen(false)}
+                            className="rounded-full bg-[#C6FF3A] px-4 py-2.5 text-center text-sm font-extrabold text-[#0B0B0F]"
+                        >
+                            sign up →
+                        </Link>
+                    </div>
+                </div>
+            )}
         </nav>
     );
 }
