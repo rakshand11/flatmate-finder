@@ -18,11 +18,19 @@ const LIFESTYLE_EMOJIS: Record<string, string> = {
     "introverted": "📚", "extroverted": "🎉", "work from home": "💻", "student": "🎓",
 };
 
+const AVATAR_OPTIONS = [
+    { id: "fox", emoji: "🦊", bg: "#C8FF4D" },
+    { id: "cat", emoji: "🐱", bg: "#FF6B6B" },
+    { id: "panda", emoji: "🐼", bg: "#7C3AED" },
+    { id: "owl", emoji: "🦉", bg: "#4DD0E1" },
+];
+
 const STEPS = [
     { id: 1, label: "Who are you?", icon: "👤" },
     { id: 2, label: "Where at?", icon: "📍" },
     { id: 3, label: "Budget", icon: "💸" },
     { id: 4, label: "Vibe check", icon: "✨" },
+    { id: 5, label: "Your photo", icon: "🖼️" },
 ];
 
 const inputCls =
@@ -37,6 +45,7 @@ export default function CreateProfile() {
         name: "", age: "", gender: "", bio: "",
         city: "", locality: "", budget_min: "", budget_max: "",
         occupation: "", lifestyle_tags: [] as string[],
+        avatar: "", photo: "" as string,
     });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -52,6 +61,30 @@ export default function CreateProfile() {
                 ? prev.lifestyle_tags.filter((t) => t !== tag)
                 : [...prev.lifestyle_tags, tag],
         }));
+
+    const selectAvatar = (id: string) =>
+        setForm((prev) => ({ ...prev, avatar: id, photo: "" }));
+
+    const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) {
+            setError("Please upload an image file 🖼️");
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setError("Image is too big — keep it under 5MB 📏");
+            return;
+        }
+        setError("");
+        const reader = new FileReader();
+        reader.onload = () => {
+            setForm((prev) => ({ ...prev, photo: reader.result as string, avatar: "" }));
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const removePhoto = () => setForm((prev) => ({ ...prev, photo: "" }));
 
     const next = () => {
         setError("");
@@ -70,6 +103,10 @@ export default function CreateProfile() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+        if (!form.avatar && !form.photo) {
+            setError("Pick an avatar or upload a photo 🖼️");
+            return;
+        }
         setLoading(true);
         try {
             await API.post("/profile/create", {
@@ -85,6 +122,11 @@ export default function CreateProfile() {
             setLoading(false);
         }
     };
+
+    // Resolve what to show as the "avatar" preview in the left panel
+    const avatarPreview = form.photo
+        ? null
+        : AVATAR_OPTIONS.find((a) => a.id === form.avatar);
 
     return (
         <div
@@ -139,19 +181,19 @@ export default function CreateProfile() {
                                 <div
                                     key={s.id}
                                     className={`flex items-center gap-4 rounded-2xl px-5 py-4 border transition-all duration-300 ${active
-                                            ? "bg-[#C8FF4D]/10 border-[#C8FF4D]/40"
-                                            : done
-                                                ? "bg-[#1D1829] border-[#2E2640] opacity-60"
-                                                : "bg-transparent border-transparent opacity-30"
+                                        ? "bg-[#C8FF4D]/10 border-[#C8FF4D]/40"
+                                        : done
+                                            ? "bg-[#1D1829] border-[#2E2640] opacity-60"
+                                            : "bg-transparent border-transparent opacity-30"
                                         }`}
                                 >
                                     {/* Circle */}
                                     <div
                                         className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-sm font-bold border-2 transition-all duration-300 ${active
-                                                ? "bg-[#C8FF4D] border-[#C8FF4D] text-[#15111F]"
-                                                : done
-                                                    ? "bg-[#2A2438] border-[#C8FF4D]/40 text-[#C8FF4D]"
-                                                    : "bg-[#1D1829] border-[#2E2640] text-[#6E6585]"
+                                            ? "bg-[#C8FF4D] border-[#C8FF4D] text-[#15111F]"
+                                            : done
+                                                ? "bg-[#2A2438] border-[#C8FF4D]/40 text-[#C8FF4D]"
+                                                : "bg-[#1D1829] border-[#2E2640] text-[#6E6585]"
                                             }`}
                                     >
                                         {done ? "✓" : s.icon}
@@ -188,9 +230,23 @@ export default function CreateProfile() {
                             Your card preview
                         </p>
                         <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 rounded-2xl bg-[#2A2438] border border-[#3A324D] flex items-center justify-center text-2xl">
-                                👤
-                            </div>
+                            {form.photo ? (
+                                <img
+                                    src={form.photo}
+                                    alt="Your profile photo"
+                                    className="h-12 w-12 rounded-2xl object-cover border border-[#3A324D]"
+                                />
+                            ) : (
+                                <div
+                                    className="h-12 w-12 rounded-2xl border flex items-center justify-center text-2xl"
+                                    style={{
+                                        backgroundColor: avatarPreview ? `${avatarPreview.bg}26` : "#2A2438",
+                                        borderColor: avatarPreview ? `${avatarPreview.bg}66` : "#3A324D",
+                                    }}
+                                >
+                                    {avatarPreview ? avatarPreview.emoji : "👤"}
+                                </div>
+                            )}
                             <div>
                                 <p className="text-sm font-bold text-[#F4F1FF]">
                                     {form.name || "Your name"}
@@ -425,43 +481,182 @@ export default function CreateProfile() {
 
                         {/* ── STEP 4: Lifestyle ── */}
                         {step === 4 && (
+                            <div className="space-y-5">
+                                <div>
+                                    <h2 className="text-3xl font-bold text-[#F4F1FF] mb-1">
+                                        Vibe check ✨
+                                    </h2>
+                                    <p className="text-sm text-[#9D93B8]">
+                                        Pick everything that describes you.
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2.5">
+                                    {LIFESTYLE_OPTIONS.map((tag) => {
+                                        const active = form.lifestyle_tags.includes(tag);
+                                        return (
+                                            <button
+                                                key={tag} type="button" onClick={() => toggleTag(tag)}
+                                                className={`flex items-center gap-2 rounded-full border-2 px-4 py-2.5 text-sm font-semibold transition-all duration-150 ${active
+                                                    ? "bg-[#C8FF4D] border-[#C8FF4D] text-[#15111F] scale-105 shadow-lg shadow-[#C8FF4D]/20"
+                                                    : "bg-[#1D1829] border-[#2A2438] text-[#9D93B8] hover:border-[#C8FF4D]/40 hover:text-[#F4F1FF]"
+                                                    }`}
+                                            >
+                                                <span>{LIFESTYLE_EMOJIS[tag]}</span>
+                                                <span>{tag}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {form.lifestyle_tags.length > 0 && (
+                                    <p
+                                        className="text-xs text-[#C8FF4D]"
+                                        style={{ fontFamily: "'Space Mono', monospace" }}
+                                    >
+                                        ✓ {form.lifestyle_tags.length} selected
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ── STEP 5: Photo / Avatar ── */}
+                        {step === 5 && (
                             <form onSubmit={handleSubmit}>
                                 <div className="space-y-5">
                                     <div>
                                         <h2 className="text-3xl font-bold text-[#F4F1FF] mb-1">
-                                            Vibe check ✨
+                                            Your photo
                                         </h2>
                                         <p className="text-sm text-[#9D93B8]">
-                                            Pick everything that describes you.
+                                            Upload a photo, or pick an avatar if you'd rather keep it casual.
                                         </p>
                                     </div>
 
-                                    <div className="flex flex-wrap gap-2.5">
-                                        {LIFESTYLE_OPTIONS.map((tag) => {
-                                            const active = form.lifestyle_tags.includes(tag);
+                                    {/* Current selection preview */}
+                                    <div className="flex items-center gap-4 rounded-2xl bg-[#1D1829] border border-[#2E2640] p-5">
+                                        {form.photo ? (
+                                            <img
+                                                src={form.photo}
+                                                alt="Uploaded preview"
+                                                className="h-16 w-16 rounded-2xl object-cover border border-[#3A324D]"
+                                            />
+                                        ) : avatarPreview ? (
+                                            <div
+                                                className="h-16 w-16 rounded-2xl border flex items-center justify-center text-3xl"
+                                                style={{
+                                                    backgroundColor: `${avatarPreview.bg}26`,
+                                                    borderColor: `${avatarPreview.bg}66`,
+                                                }}
+                                            >
+                                                {avatarPreview.emoji}
+                                            </div>
+                                        ) : (
+                                            <div className="h-16 w-16 rounded-2xl border border-[#3A324D] bg-[#2A2438] flex items-center justify-center text-3xl text-[#6E6585]">
+                                                👤
+                                            </div>
+                                        )}
+                                        <div className="flex-1">
+                                            <p className="text-sm font-bold text-[#F4F1FF]">
+                                                {form.photo ? "Photo uploaded" : avatarPreview ? "Avatar selected" : "No photo yet"}
+                                            </p>
+                                            <p
+                                                className="text-xs text-[#6E6585]"
+                                                style={{ fontFamily: "'Space Mono', monospace" }}
+                                            >
+                                                {form.photo
+                                                    ? "Looking good — this is what people will see first."
+                                                    : avatarPreview
+                                                        ? "You can swap this anytime before submitting."
+                                                        : "Pick an avatar or upload your own below."}
+                                            </p>
+                                        </div>
+                                        {form.photo && (
+                                            <button
+                                                type="button"
+                                                onClick={removePhoto}
+                                                className="rounded-xl border-2 border-[#2A2438] px-3 py-2 text-xs font-bold text-[#9D93B8] hover:border-[#FF6B6B]/40 hover:text-[#FF8A8A] transition-colors"
+                                            >
+                                                Remove
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Upload */}
+                                    <div>
+                                        <label className={labelCls}>Upload a photo</label>
+                                        <label
+                                            htmlFor="photo-upload"
+                                            className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#2A2438] bg-[#211C2E] px-4 py-8 text-center transition-colors hover:border-[#C8FF4D]/40"
+                                        >
+                                            <span className="text-3xl opacity-60">📸</span>
+                                            <span className="text-sm font-semibold text-[#F4F1FF]">
+                                                Click to upload
+                                            </span>
+                                            <span
+                                                className="text-xs text-[#6E6585]"
+                                                style={{ fontFamily: "'Space Mono', monospace" }}
+                                            >
+                                                JPG or PNG, up to 5MB
+                                            </span>
+                                            <input
+                                                id="photo-upload"
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handlePhotoUpload}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    </div>
+
+                                    {/* Divider */}
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-px flex-1 bg-[#2A2438]" />
+                                        <span
+                                            className="text-xs uppercase tracking-[0.15em] text-[#6E6585]"
+                                            style={{ fontFamily: "'Space Mono', monospace" }}
+                                        >
+                                            or pick an avatar
+                                        </span>
+                                        <div className="h-px flex-1 bg-[#2A2438]" />
+                                    </div>
+
+                                    {/* Avatar picker */}
+                                    <div className="grid grid-cols-4 gap-3">
+                                        {AVATAR_OPTIONS.map((a) => {
+                                            const active = form.avatar === a.id && !form.photo;
                                             return (
                                                 <button
-                                                    key={tag} type="button" onClick={() => toggleTag(tag)}
-                                                    className={`flex items-center gap-2 rounded-full border-2 px-4 py-2.5 text-sm font-semibold transition-all duration-150 ${active
-                                                            ? "bg-[#C8FF4D] border-[#C8FF4D] text-[#15111F] scale-105 shadow-lg shadow-[#C8FF4D]/20"
-                                                            : "bg-[#1D1829] border-[#2A2438] text-[#9D93B8] hover:border-[#C8FF4D]/40 hover:text-[#F4F1FF]"
+                                                    key={a.id}
+                                                    type="button"
+                                                    onClick={() => selectAvatar(a.id)}
+                                                    className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 py-5 transition-all duration-150 ${active
+                                                        ? "scale-105 shadow-lg"
+                                                        : "border-[#2A2438] bg-[#1D1829] hover:border-[#C8FF4D]/40"
                                                         }`}
+                                                    style={
+                                                        active
+                                                            ? {
+                                                                backgroundColor: `${a.bg}1A`,
+                                                                borderColor: a.bg,
+                                                                boxShadow: `0 0 20px 2px ${a.bg}33`,
+                                                            }
+                                                            : undefined
+                                                    }
                                                 >
-                                                    <span>{LIFESTYLE_EMOJIS[tag]}</span>
-                                                    <span>{tag}</span>
+                                                    <span className="text-3xl">{a.emoji}</span>
+                                                    {active && (
+                                                        <span
+                                                            className="text-[10px] font-bold uppercase tracking-[0.1em]"
+                                                            style={{ color: a.bg, fontFamily: "'Space Mono', monospace" }}
+                                                        >
+                                                            Selected
+                                                        </span>
+                                                    )}
                                                 </button>
                                             );
                                         })}
                                     </div>
-
-                                    {form.lifestyle_tags.length > 0 && (
-                                        <p
-                                            className="text-xs text-[#C8FF4D]"
-                                            style={{ fontFamily: "'Space Mono', monospace" }}
-                                        >
-                                            ✓ {form.lifestyle_tags.length} selected
-                                        </p>
-                                    )}
 
                                     {error && (
                                         <div
@@ -491,7 +686,7 @@ export default function CreateProfile() {
                         )}
 
                         {/* ── Nav buttons ── */}
-                        {step < 4 && (
+                        {step < 5 && (
                             <div className="mt-8 flex items-center gap-4">
                                 {step > 1 && (
                                     <button
@@ -508,6 +703,19 @@ export default function CreateProfile() {
                                     className="flex-1 rounded-2xl bg-[#C8FF4D] py-4 text-sm font-bold text-[#15111F] tracking-wide hover:shadow-[0_0_30px_4px_rgba(200,255,77,0.35)] hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
                                 >
                                     Continue →
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Back button on final step */}
+                        {step === 5 && (
+                            <div className="mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => { setError(""); setStep((s) => s - 1); }}
+                                    className="w-full rounded-2xl border-2 border-[#2A2438] bg-[#1D1829] py-4 text-sm font-bold text-[#9D93B8] hover:border-[#C8FF4D]/40 hover:text-[#F4F1FF] transition-all duration-200"
+                                >
+                                    ← Back
                                 </button>
                             </div>
                         )}
