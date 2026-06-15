@@ -24,6 +24,33 @@ interface Toast {
     type: "match" | "like" | "pass";
 }
 
+// Deterministic gradient pairs drawn from the brand palette — every
+// profile without a photo gets its own identity card, not a void.
+const MONOGRAM_GRADIENTS: [string, string][] = [
+    ["#C8FF4D", "#7C3AED"],
+    ["#FF6B6B", "#7C3AED"],
+    ["#4DD0E1", "#7C3AED"],
+    ["#C8FF4D", "#FF6B6B"],
+    ["#7C3AED", "#4DD0E1"],
+    ["#FF6B6B", "#C8FF4D"],
+];
+
+function hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash);
+}
+
+function getMonogram(name: string) {
+    const idx = hashString(name || "?") % MONOGRAM_GRADIENTS.length;
+    const [from, to] = MONOGRAM_GRADIENTS[idx];
+    const initial = (name || "?").trim().charAt(0).toUpperCase() || "?";
+    return { from, to, initial };
+}
+
 export default function BrowsePage() {
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [current, setCurrent] = useState(0);
@@ -120,8 +147,8 @@ export default function BrowsePage() {
             {/* Toast */}
             <div
                 className={`fixed top-6 left-1/2 z-50 -translate-x-1/2 transition-all duration-500 ${toast
-                        ? "opacity-100 translate-y-0 scale-100"
-                        : "opacity-0 -translate-y-4 scale-95 pointer-events-none"
+                    ? "opacity-100 translate-y-0 scale-100"
+                    : "opacity-0 -translate-y-4 scale-95 pointer-events-none"
                     }`}
             >
                 {toast && (
@@ -209,30 +236,55 @@ export default function BrowsePage() {
                             {/* ── Main Profile Card ── */}
                             <div className="relative rounded-[28px] bg-[#1D1829] border border-[#2E2640] shadow-2xl shadow-black/60 overflow-hidden">
 
-                                {/* ── Photo — taller, full width ── */}
-                                <div className="relative h-[420px] w-full overflow-hidden bg-[#211C2E]">
+                                {/* ── Photo / monogram — taller, full width ── */}
+                                <div className="relative h-[420px] w-full overflow-hidden">
                                     {profile.photo_url ? (
                                         <img
                                             src={profile.photo_url}
                                             alt={profile.name}
                                             className="h-full w-full object-cover"
                                         />
-                                    ) : (
-                                        <div className="flex h-full items-center justify-center">
-                                            <span className="text-9xl opacity-30">👤</span>
-                                        </div>
-                                    )}
+                                    ) : (() => {
+                                        const { from, to, initial } = getMonogram(profile.name);
+                                        return (
+                                            <div
+                                                className="relative flex h-full w-full items-center justify-center overflow-hidden"
+                                                style={{
+                                                    backgroundImage: `linear-gradient(135deg, ${from} 0%, ${to} 100%)`,
+                                                }}
+                                            >
+                                                {/* Subtle diagonal texture */}
+                                                <div
+                                                    className="absolute inset-0 opacity-10"
+                                                    style={{
+                                                        backgroundImage:
+                                                            "repeating-linear-gradient(135deg, #15111F 0px, #15111F 2px, transparent 2px, transparent 40px)",
+                                                    }}
+                                                />
+                                                {/* Radial glow behind monogram */}
+                                                <div className="absolute h-72 w-72 rounded-full bg-[#15111F]/15 blur-3xl" />
+                                                <span
+                                                    className="relative text-[180px] font-bold leading-none text-[#15111F]/90 select-none"
+                                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                                >
+                                                    {initial}
+                                                </span>
+                                                {/* Bottom shade for badge legibility */}
+                                                <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#15111F]/25 to-transparent" />
+                                            </div>
+                                        );
+                                    })()}
 
                                     {/* Top badges */}
                                     <div className="pointer-events-none absolute inset-x-0 top-5 flex justify-between px-6">
                                         <span
-                                            className="rounded-2xl bg-[#15111F]/80 backdrop-blur-sm border border-[#2E2640] px-4 py-2 text-xs font-semibold text-[#F4F1FF]"
+                                            className="rounded-2xl bg-[#15111F]/70 backdrop-blur-md border border-white/10 px-4 py-2 text-xs font-semibold text-[#F4F1FF] shadow-lg shadow-black/20"
                                             style={{ fontFamily: "'Space Mono', monospace" }}
                                         >
                                             📍 {profile.locality}, {profile.city}
                                         </span>
                                         <span
-                                            className="rounded-2xl bg-[#C8FF4D] px-4 py-2 text-xs font-bold text-[#15111F]"
+                                            className="rounded-2xl bg-[#C8FF4D] px-4 py-2 text-xs font-bold text-[#15111F] shadow-lg shadow-black/20"
                                             style={{ fontFamily: "'Space Mono', monospace" }}
                                         >
                                             ₹{profile.budget_min}k–{profile.budget_max}k
@@ -247,9 +299,9 @@ export default function BrowsePage() {
                                 <div className="px-8 pt-4 pb-6 space-y-5">
 
                                     {/* Name row */}
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <h2 className="text-3xl font-bold text-[#F4F1FF] tracking-tight">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <h2 className="text-3xl font-bold text-[#F4F1FF] tracking-tight truncate">
                                                 {profile.name}
                                             </h2>
                                             <div className="mt-2 flex items-center gap-2 flex-wrap">
@@ -272,7 +324,7 @@ export default function BrowsePage() {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="text-right">
+                                        <div className="text-right flex-shrink-0">
                                             <p
                                                 className="text-xs text-[#6E6585] mb-1"
                                                 style={{ fontFamily: "'Space Mono', monospace" }}
