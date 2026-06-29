@@ -14,17 +14,14 @@ import ProtectedRoute from "./ProtectedRoute";
 
 function Layout() {
     return (
-        <div className="flex min-h-screen bg-gray-50">
+        <div className="flex min-h-screen bg-[#15111F]">
             <Sidebar />
-            <main className="flex-1">
-                <div className="px-4 lg:px-6">
-                    <Outlet />
-                </div>
+            <main className="flex-1 min-w-0">
+                <Outlet />
             </main>
         </div>
     );
 }
-
 export default function App() {
     return (
         <BrowserRouter>
