@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import API from "../api/axios";
 
 const FONT_IMPORT = `
@@ -24,8 +24,6 @@ interface Toast {
     type: "match" | "like" | "pass";
 }
 
-// Deterministic gradient pairs drawn from the brand palette — every
-// profile without a photo gets its own identity card, not a void.
 const MONOGRAM_GRADIENTS: [string, string][] = [
     ["#C8FF4D", "#7C3AED"],
     ["#FF6B6B", "#7C3AED"],
@@ -34,6 +32,9 @@ const MONOGRAM_GRADIENTS: [string, string][] = [
     ["#7C3AED", "#4DD0E1"],
     ["#FF6B6B", "#C8FF4D"],
 ];
+
+// Your own lifestyle tags — used to compute compatibility & highlight mutual tags
+const MY_LIFESTYLE_TAGS = ["non-smoker", "early riser", "vegetarian"];
 
 function hashString(str: string): number {
     let hash = 0;
@@ -51,12 +52,26 @@ function getMonogram(name: string) {
     return { from, to, initial };
 }
 
+function getCompatibility(tags: string[]): number {
+    if (!tags?.length) return 0;
+    const matches = tags.filter((t) => MY_LIFESTYLE_TAGS.includes(t)).length;
+    const base = Math.round((matches / Math.max(MY_LIFESTYLE_TAGS.length, tags.length)) * 100);
+    // Add a small deterministic bonus so not every profile without overlap shows 0
+    return Math.min(100, base + 40);
+}
+
+function getMutualTags(tags: string[]): string[] {
+    return (tags || []).filter((t) => MY_LIFESTYLE_TAGS.includes(t));
+}
+
 export default function BrowsePage() {
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [current, setCurrent] = useState(0);
     const [loading, setLoading] = useState(true);
     const [swiping, setSwiping] = useState(false);
     const [toast, setToast] = useState<Toast | null>(null);
+    const [stampDir, setStampDir] = useState<"left" | "right" | null>(null);
+    const cardRef = useRef<HTMLDivElement>(null);
 
     const showToast = (msg: string, type: Toast["type"]) => {
         setToast({ msg, type });
@@ -72,31 +87,48 @@ export default function BrowsePage() {
             .finally(() => setLoading(false));
     }, []);
 
+    // Keyboard support
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === "ArrowLeft") swipe("left");
+            if (e.key === "ArrowRight") swipe("right");
+        };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profiles, current, swiping]);
+
     const swipe = async (direction: "left" | "right") => {
         if (swiping || profiles.length === 0 || current >= profiles.length) return;
         setSwiping(true);
+        setStampDir(direction);
         const swipedProfile = profiles[current];
-        try {
-            const res = await API.post("/swipes/create", {
-                swiped_id: swipedProfile.user_id,
-                direction,
-            });
-            if (res.data.msg === "Its a match!") {
-                showToast(`🎉 You matched with ${swipedProfile.name}!`, "match");
-            } else if (direction === "right") {
-                showToast(`❤️ You liked ${swipedProfile.name}`, "like");
-            } else {
-                showToast(`👋 Passed on ${swipedProfile.name}`, "pass");
+
+        setTimeout(async () => {
+            try {
+                const res = await API.post("/swipes/create", {
+                    swiped_id: swipedProfile.user_id,
+                    direction,
+                });
+                if (res.data.msg === "Its a match!") {
+                    showToast(`🎉 You matched with ${swipedProfile.name}!`, "match");
+                } else if (direction === "right") {
+                    showToast(`❤️ You liked ${swipedProfile.name}`, "like");
+                } else {
+                    showToast(`👋 Passed on ${swipedProfile.name}`, "pass");
+                }
+                setProfiles((prev) => prev.filter((_, i) => i !== current));
+                setCurrent((prev) => (prev >= 1 ? prev - 1 : 0));
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setStampDir(null);
+                setSwiping(false);
             }
-            setProfiles((prev) => prev.filter((_, i) => i !== current));
-            setCurrent((prev) => (prev >= 1 ? prev - 1 : 0));
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setSwiping(false);
-        }
+        }, 500);
     };
 
+    // Loading screen
     if (loading)
         return (
             <div
@@ -104,7 +136,7 @@ export default function BrowsePage() {
                 style={{ fontFamily: "'Space Grotesk', sans-serif" }}
             >
                 <style>{FONT_IMPORT}</style>
-                <div className="pointer-events-none absolute inset-0 -z-0">
+                <div className="pointer-events-none absolute inset-0">
                     <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-[#C8FF4D]/10 blur-[100px]" />
                     <div className="absolute -bottom-40 -right-32 h-96 w-96 rounded-full bg-[#FF6B6B]/15 blur-[100px]" />
                 </div>
@@ -124,10 +156,13 @@ export default function BrowsePage() {
         );
 
     const profile = profiles[current];
+    const compat = profile ? getCompatibility(profile.lifestyle_tags) : 0;
+    const mutualTags = profile ? getMutualTags(profile.lifestyle_tags) : [];
+    const monogram = profile ? getMonogram(profile.name) : null;
 
     const toastStyles: Record<Toast["type"], string> = {
         match: "bg-[#C8FF4D] text-[#15111F]",
-        like: "bg-gradient-to-r from-[#C8FF4D] to-[#A8E63D] text-[#15111F]",
+        like: "bg-[#C8FF4D] text-[#15111F]",
         pass: "bg-[#2A2438] border border-[#3A324D] text-[#9D93B8]",
     };
 
@@ -147,8 +182,8 @@ export default function BrowsePage() {
             {/* Toast */}
             <div
                 className={`fixed top-6 left-1/2 z-50 -translate-x-1/2 transition-all duration-500 ${toast
-                    ? "opacity-100 translate-y-0 scale-100"
-                    : "opacity-0 -translate-y-4 scale-95 pointer-events-none"
+                        ? "opacity-100 translate-y-0 scale-100"
+                        : "opacity-0 -translate-y-4 scale-95 pointer-events-none"
                     }`}
             >
                 {toast && (
@@ -182,7 +217,7 @@ export default function BrowsePage() {
                             <span className="text-[#C8FF4D]">person.</span>
                         </h1>
                         <p className="text-sm text-[#9D93B8] mt-0.5">
-                            Swipe right to like · left to pass
+                            Swipe right to like · left to pass · use ← → keys
                         </p>
                     </div>
 
@@ -227,17 +262,41 @@ export default function BrowsePage() {
                             <span>Like ❤️ 👉</span>
                         </div>
 
-                        {/* ── Card stack illusion ── */}
+                        {/* ── Card stack ── */}
                         <div className="relative w-full">
-                            {/* Cards behind */}
                             <div className="absolute inset-0 top-4 rounded-[28px] bg-[#2A2438] rotate-[3deg] opacity-50 -z-10" />
                             <div className="absolute inset-0 top-2 rounded-[28px] bg-[#211C2E] rotate-[-2deg] opacity-70 -z-10" />
 
                             {/* ── Main Profile Card ── */}
-                            <div className="relative rounded-[28px] bg-[#1D1829] border border-[#2E2640] shadow-2xl shadow-black/60 overflow-hidden">
+                            <div
+                                ref={cardRef}
+                                className={`relative rounded-[28px] bg-[#1D1829] border border-[#2E2640] shadow-2xl shadow-black/60 overflow-hidden transition-transform duration-150 ${stampDir === "right"
+                                        ? "rotate-[3deg] translate-x-1"
+                                        : stampDir === "left"
+                                            ? "-rotate-[3deg] -translate-x-1"
+                                            : ""
+                                    }`}
+                            >
+                                {/* ── LIKE stamp ── */}
+                                <div
+                                    className={`pointer-events-none absolute top-7 right-6 z-20 border-[3px] border-[#C8FF4D] text-[#C8FF4D] rounded-lg px-4 py-1 text-xl font-bold -rotate-12 transition-opacity duration-200 ${stampDir === "right" ? "opacity-100" : "opacity-0"
+                                        }`}
+                                    style={{ fontFamily: "'Space Mono', monospace" }}
+                                >
+                                    LIKE
+                                </div>
 
-                                {/* ── Photo / monogram — taller, full width ── */}
-                                <div className="relative h-[420px] w-full overflow-hidden">
+                                {/* ── NOPE stamp ── */}
+                                <div
+                                    className={`pointer-events-none absolute top-7 left-6 z-20 border-[3px] border-[#FF6B6B] text-[#FF6B6B] rounded-lg px-4 py-1 text-xl font-bold rotate-12 transition-opacity duration-200 ${stampDir === "left" ? "opacity-100" : "opacity-0"
+                                        }`}
+                                    style={{ fontFamily: "'Space Mono', monospace" }}
+                                >
+                                    NOPE
+                                </div>
+
+                                {/* ── Photo / monogram ── */}
+                                <div className="relative h-[400px] w-full overflow-hidden">
                                     {profile.photo_url ? (
                                         <img
                                             src={profile.photo_url}
@@ -245,7 +304,7 @@ export default function BrowsePage() {
                                             className="h-full w-full object-cover"
                                         />
                                     ) : (() => {
-                                        const { from, to, initial } = getMonogram(profile.name);
+                                        const { from, to, initial } = monogram!;
                                         return (
                                             <div
                                                 className="relative flex h-full w-full items-center justify-center overflow-hidden"
@@ -253,7 +312,6 @@ export default function BrowsePage() {
                                                     backgroundImage: `linear-gradient(135deg, ${from} 0%, ${to} 100%)`,
                                                 }}
                                             >
-                                                {/* Subtle diagonal texture */}
                                                 <div
                                                     className="absolute inset-0 opacity-10"
                                                     style={{
@@ -261,15 +319,23 @@ export default function BrowsePage() {
                                                             "repeating-linear-gradient(135deg, #15111F 0px, #15111F 2px, transparent 2px, transparent 40px)",
                                                     }}
                                                 />
-                                                {/* Radial glow behind monogram */}
                                                 <div className="absolute h-72 w-72 rounded-full bg-[#15111F]/15 blur-3xl" />
+                                                {/* Floating animation via inline keyframes */}
+                                                <style>{`
+                                                    @keyframes floatLetter {
+                                                        0%, 100% { transform: translateY(0px); }
+                                                        50% { transform: translateY(-10px); }
+                                                    }
+                                                `}</style>
                                                 <span
-                                                    className="relative text-[180px] font-bold leading-none text-[#15111F]/90 select-none"
-                                                    style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                                                    className="relative text-[160px] font-bold leading-none text-[#15111F]/85 select-none"
+                                                    style={{
+                                                        fontFamily: "'Space Grotesk', sans-serif",
+                                                        animation: "floatLetter 4s ease-in-out infinite",
+                                                    }}
                                                 >
                                                     {initial}
                                                 </span>
-                                                {/* Bottom shade for badge legibility */}
                                                 <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#15111F]/25 to-transparent" />
                                             </div>
                                         );
@@ -278,25 +344,46 @@ export default function BrowsePage() {
                                     {/* Top badges */}
                                     <div className="pointer-events-none absolute inset-x-0 top-5 flex justify-between px-6">
                                         <span
-                                            className="rounded-2xl bg-[#15111F]/70 backdrop-blur-md border border-white/10 px-4 py-2 text-xs font-semibold text-[#F4F1FF] shadow-lg shadow-black/20"
+                                            className="rounded-2xl bg-[#15111F]/70 backdrop-blur-md border border-white/10 px-4 py-2 text-xs font-semibold text-[#F4F1FF] shadow-lg"
                                             style={{ fontFamily: "'Space Mono', monospace" }}
                                         >
                                             📍 {profile.locality}, {profile.city}
                                         </span>
                                         <span
-                                            className="rounded-2xl bg-[#C8FF4D] px-4 py-2 text-xs font-bold text-[#15111F] shadow-lg shadow-black/20"
+                                            className="rounded-2xl bg-[#C8FF4D] px-4 py-2 text-xs font-bold text-[#15111F] shadow-lg"
                                             style={{ fontFamily: "'Space Mono', monospace" }}
                                         >
-                                            ₹{profile.budget_min}k–{profile.budget_max}k
+                                            ₹{profile.budget_min / 1000}k–{profile.budget_max / 1000}k
                                         </span>
                                     </div>
 
-                                    {/* Bottom fade into card */}
-                                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#1D1829] to-transparent" />
+                                    {/* ── Compatibility bar ── NEW */}
+                                    <div className="absolute inset-x-0 bottom-0 px-6 pb-4 pt-12 bg-gradient-to-t from-[#1D1829] to-transparent">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <span
+                                                className="text-[10px] uppercase tracking-widest text-[#9D93B8]"
+                                                style={{ fontFamily: "'Space Mono', monospace" }}
+                                            >
+                                                Compatibility
+                                            </span>
+                                            <span
+                                                className="text-xs font-bold text-[#C8FF4D]"
+                                                style={{ fontFamily: "'Space Mono', monospace" }}
+                                            >
+                                                {compat}%
+                                            </span>
+                                        </div>
+                                        <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full bg-gradient-to-r from-[#C8FF4D] to-[#a8e63d] transition-all duration-700"
+                                                style={{ width: `${compat}%` }}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* ── Info ── */}
-                                <div className="px-8 pt-4 pb-6 space-y-5">
+                                <div className="px-7 pt-5 pb-4 space-y-4">
 
                                     {/* Name row */}
                                     <div className="flex items-start justify-between gap-4">
@@ -337,35 +424,62 @@ export default function BrowsePage() {
                                         </div>
                                     </div>
 
-                                    {/* Bio */}
+                                    {/* Bio — with quotation accent */}
                                     {profile.bio && (
-                                        <p className="text-sm text-[#9D93B8] leading-relaxed rounded-2xl bg-[#211C2E] border border-[#2A2438] p-4">
-                                            {profile.bio}
-                                        </p>
+                                        <div className="relative text-sm text-[#9D93B8] leading-relaxed rounded-2xl bg-[#211C2E] border border-[#2A2438] px-5 py-4">
+                                            <span
+                                                className="absolute -top-1 left-3 text-3xl text-[#C8FF4D]/40 leading-none select-none"
+                                                style={{ fontFamily: "Georgia, serif" }}
+                                            >
+                                                "
+                                            </span>
+                                            <p className="pl-4">{profile.bio}</p>
+                                        </div>
                                     )}
 
-                                    {/* Lifestyle tags */}
+                                    {/* ── Lifestyle tags — mutual tags highlighted ── */}
                                     {profile.lifestyle_tags?.length > 0 && (
                                         <div className="flex flex-wrap gap-2">
-                                            {profile.lifestyle_tags.map((tag) => (
-                                                <span
-                                                    key={tag}
-                                                    className="rounded-full bg-[#211C2E] border border-[#2E2640] px-3 py-1.5 text-xs font-semibold text-[#C8FF4D]"
-                                                    style={{ fontFamily: "'Space Mono', monospace" }}
-                                                >
-                                                    {tag}
-                                                </span>
-                                            ))}
+                                            {profile.lifestyle_tags.map((tag) => {
+                                                const isMutual = mutualTags.includes(tag);
+                                                return (
+                                                    <span
+                                                        key={tag}
+                                                        className={`rounded-full px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 ${isMutual
+                                                                ? "bg-[#C8FF4D]/10 border border-[#C8FF4D]/30 text-[#C8FF4D]"
+                                                                : "bg-[#211C2E] border border-[#2E2640] text-[#C8FF4D]"
+                                                            }`}
+                                                        style={{ fontFamily: "'Space Mono', monospace" }}
+                                                    >
+                                                        {isMutual && (
+                                                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#C8FF4D] flex-shrink-0" />
+                                                        )}
+                                                        {tag}
+                                                    </span>
+                                                );
+                                            })}
                                         </div>
+                                    )}
+
+                                    {/* Mutual tags label */}
+                                    {mutualTags.length > 0 && (
+                                        <p
+                                            className="text-[10px] text-[#6E6585] -mt-1"
+                                            style={{ fontFamily: "'Space Mono', monospace" }}
+                                        >
+                                            ● {mutualTags.length} trait{mutualTags.length > 1 ? "s" : ""} in common with you
+                                        </p>
                                     )}
                                 </div>
 
                                 {/* ── Swipe Buttons ── */}
-                                <div className="border-t border-[#2E2640] bg-[#15111F] px-8 py-6">
+                                <div className="border-t border-[#2E2640] bg-[#15111F] px-7 py-5">
                                     <div className="flex items-center gap-4">
                                         {/* Pass */}
                                         <button
                                             onClick={() => swipe("left")}
+                                            onMouseEnter={() => setStampDir("left")}
+                                            onMouseLeave={() => !swiping && setStampDir(null)}
                                             disabled={swiping}
                                             className="flex flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-[#2E2640] bg-[#1D1829] py-4 text-sm font-bold text-[#9D93B8] hover:border-[#FF6B6B]/60 hover:bg-[#FF6B6B]/10 hover:text-[#FF8A8A] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                                             style={{ fontFamily: "'Space Mono', monospace" }}
@@ -377,6 +491,8 @@ export default function BrowsePage() {
                                         {/* Like */}
                                         <button
                                             onClick={() => swipe("right")}
+                                            onMouseEnter={() => setStampDir("right")}
+                                            onMouseLeave={() => !swiping && setStampDir(null)}
                                             disabled={swiping}
                                             className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#C8FF4D] py-4 text-sm font-bold text-[#15111F] hover:shadow-[0_0_30px_4px_rgba(200,255,77,0.35)] hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                                             style={{ fontFamily: "'Space Mono', monospace" }}
@@ -385,11 +501,27 @@ export default function BrowsePage() {
                                             Like
                                         </button>
                                     </div>
+
+                                    {/* Keyboard hint */}
+                                    <div
+                                        className="mt-3 flex items-center justify-center gap-3 text-[10px] text-[#6E6585]"
+                                        style={{ fontFamily: "'Space Mono', monospace" }}
+                                    >
+                                        <span>
+                                            <kbd className="rounded bg-[#211C2E] border border-[#3A324D] px-1.5 py-0.5 text-[#9D93B8]">←</kbd>
+                                            {" "}Pass
+                                        </span>
+                                        <span className="text-[#3A324D]">·</span>
+                                        <span>
+                                            Like{" "}
+                                            <kbd className="rounded bg-[#211C2E] border border-[#3A324D] px-1.5 py-0.5 text-[#9D93B8]">→</kbd>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* ── Profile counter ── */}
+                        {/* ── Profile nav counter ── */}
                         <div className="mt-6 flex items-center justify-center gap-5 rounded-2xl bg-[#1D1829] border border-[#2E2640] px-6 py-3">
                             <button
                                 disabled={current === 0}
