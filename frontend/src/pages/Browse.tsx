@@ -17,6 +17,9 @@ interface Profile {
     budget_max: number;
     lifestyle_tags: string[];
     photo_url?: string;
+    compatibility_score: number;
+    mutual_lifestyle_tags: string[];
+    conflicting_tags?: string[];
 }
 
 interface Toast {
@@ -33,8 +36,6 @@ const MONOGRAM_GRADIENTS: [string, string][] = [
     ["#FF6B6B", "#C8FF4D"],
 ];
 
-// Your own lifestyle tags — used to compute compatibility & highlight mutual tags
-const MY_LIFESTYLE_TAGS = ["non-smoker", "early riser", "vegetarian"];
 
 function hashString(str: string): number {
     let hash = 0;
@@ -52,17 +53,6 @@ function getMonogram(name: string) {
     return { from, to, initial };
 }
 
-function getCompatibility(tags: string[]): number {
-    if (!tags?.length) return 0;
-    const matches = tags.filter((t) => MY_LIFESTYLE_TAGS.includes(t)).length;
-    const base = Math.round((matches / Math.max(MY_LIFESTYLE_TAGS.length, tags.length)) * 100);
-    // Add a small deterministic bonus so not every profile without overlap shows 0
-    return Math.min(100, base + 40);
-}
-
-function getMutualTags(tags: string[]): string[] {
-    return (tags || []).filter((t) => MY_LIFESTYLE_TAGS.includes(t));
-}
 
 export default function BrowsePage() {
     const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -156,8 +146,8 @@ export default function BrowsePage() {
         );
 
     const profile = profiles[current];
-    const compat = profile ? getCompatibility(profile.lifestyle_tags) : 0;
-    const mutualTags = profile ? getMutualTags(profile.lifestyle_tags) : [];
+    const compat = profile?.compatibility_score ?? 0;
+    const mutualTags = profile?.mutual_lifestyle_tags ?? [];
     const monogram = profile ? getMonogram(profile.name) : null;
 
     const toastStyles: Record<Toast["type"], string> = {
@@ -503,6 +493,7 @@ export default function BrowsePage() {
                                     </div>
 
                                     {/* Keyboard hint */}
+                                    
                                     <div
                                         className="mt-3 flex items-center justify-center gap-3 text-[10px] text-[#6E6585]"
                                         style={{ fontFamily: "'Space Mono', monospace" }}

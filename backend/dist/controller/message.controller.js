@@ -1,5 +1,4 @@
 import pool from "../db.js";
-// ✅ SEND MESSAGE
 export const sendMessage = async (req, res) => {
     try {
         const sender_id = req.user?.id;

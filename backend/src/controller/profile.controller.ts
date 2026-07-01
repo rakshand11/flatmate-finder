@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import pool from "../db.js";
+import { computeCompatibility, type ProfileForCompatibility } from "../utils/compatibility.js";
 
 export const createProfile = async (req: Request, res: Response) => {
     try {
@@ -140,19 +141,42 @@ export const getBrowseProfiles = async (req: Request, res: Response) => {
             return res.status(401).json({ msg: "Unauthorized" });
         }
 
-        const profiles = await pool.query(
-            `SELECT * FROM profiles 
-             WHERE user_id != $1 
-             AND user_id NOT IN (
-                 SELECT swiped_id FROM swipes WHERE swiper_id = $1
-             )
-             LIMIT 20`,
+        const myProfileResult = await pool.query(
+            "SELECT * FROM profiles WHERE user_id = $1",
             [user_id]
         );
 
+        if (myProfileResult.rows.length === 0) {
+            return res.status(404).json({ msg: "Create your profile before browsing" });
+        }
+
+        const myProfile = myProfileResult.rows[0] as ProfileForCompatibility;
+
+        const profiles = await pool.query(
+            `SELECT * FROM profiles
+             WHERE user_id != $1
+             AND user_id NOT IN (
+                 SELECT swiped_id FROM swipes WHERE swiper_id = $1
+             )`,
+            [user_id]
+        );
+
+        const rankedProfiles = profiles.rows
+            .map((profile) => {
+                const compatibility = computeCompatibility(myProfile, profile as ProfileForCompatibility);
+                return {
+                    ...profile,
+                    compatibility_score: compatibility.score,
+                    mutual_lifestyle_tags: compatibility.mutual_lifestyle_tags,
+                    conflicting_tags: compatibility.conflicting_tags,
+                };
+            })
+            .sort((a, b) => b.compatibility_score - a.compatibility_score)
+            .slice(0, 20);
+
         return res.status(200).json({
             msg: "Profiles fetched",
-            profiles: profiles.rows
+            profiles: rankedProfiles,
         });
 
     } catch (error) {
