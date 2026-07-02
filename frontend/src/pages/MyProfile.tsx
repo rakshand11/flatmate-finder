@@ -57,7 +57,7 @@ export default function MyProfilePage() {
             .finally(() => setLoading(false));
     }, []);
 
-    // ── Loading ──────────────────────────────────────────────────────────────
+    
     if (loading)
         return (
             <div
@@ -84,7 +84,7 @@ export default function MyProfilePage() {
             </div>
         );
 
-    // ── Error ────────────────────────────────────────────────────────────────
+    
     if (error || !profile)
         return (
             <div
@@ -144,12 +144,12 @@ export default function MyProfilePage() {
                         </h1>
                         <p className="text-sm text-[#9D93B8] mt-0.5">This is how others see you</p>
                     </div>
-                    <Link
-                        to="/edit-profile"
-                        className="inline-flex items-center gap-2 rounded-2xl border border-[#2E2640] bg-[#1D1829] px-4 py-2 text-sm font-semibold text-[#9D93B8] hover:border-[#C8FF4D]/40 hover:text-[#C8FF4D] transition-all duration-200"
-                    >
-                        ✏️ Edit
-                    </Link>
+                    <button
+    onClick={() => { window.location.href = "/edit-profile"; }}
+    className="inline-flex items-center gap-2 rounded-2xl border border-[#2E2640] bg-[#1D1829] px-4 py-2 text-sm font-semibold text-[#9D93B8] hover:border-[#C8FF4D]/40 hover:text-[#C8FF4D] transition-all duration-200"
+>
+    ✏️ Edit
+</button>
                 </div>
 
                 {/* ── Card ── */}
