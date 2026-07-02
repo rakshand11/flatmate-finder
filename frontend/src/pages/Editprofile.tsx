@@ -134,7 +134,7 @@ export default function EditProfilePage() {
                 lifestyle_tags: form.lifestyle_tags,
             });
             setSuccess(true);
-            setTimeout(() => {window.location.href=/my-profile},1200)
+            setTimeout(() => {window.location.href="/my-profile"},1200)
         } catch (err: unknown) {
             const e = err as { response?: { data?: { msg?: string } } };
             setError(e.response?.data?.msg || "Failed to save. Try again.");
