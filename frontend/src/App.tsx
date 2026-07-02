@@ -10,6 +10,7 @@ import MyProfilePage from "./pages/MyProfile";
 import HomePage from "./pages/Home";
 import ChatListPage from "./pages/ChatList";
 import ProtectedRoute from "./ProtectedRoute";
+import EditProfilePage from "./pages/Editprofile";
 
 
 function Layout() {
@@ -45,6 +46,7 @@ export default function App() {
                         <Route path="/chat" element={<ChatListPage />} />
                         <Route path="/chat/:match_id" element={<ChatPage />} />
                         <Route path="/my-profile" element={<MyProfilePage />} />
+                        <Route path="/edit-profile" element = {<EditProfilePage/>}
                     </Route>
 
                 </Route>
