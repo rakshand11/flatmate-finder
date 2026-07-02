@@ -46,7 +46,7 @@ export default function App() {
                         <Route path="/chat" element={<ChatListPage />} />
                         <Route path="/chat/:match_id" element={<ChatPage />} />
                         <Route path="/my-profile" element={<MyProfilePage />} />
-                        <Route path="/edit-profile" element = {<EditProfilePage/>}
+                        <Route path="/edit-profile" element = {<EditProfilePage/>}/>
                     </Route>
 
                 </Route>
