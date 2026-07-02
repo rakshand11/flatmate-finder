@@ -89,26 +89,68 @@ export const getProfile = async (req: Request, res: Response) => {
 
 export const updateProfile = async (req: Request, res: Response) => {
     try {
-        const user_id = req.user?.id
-        const { name, bio, occupation } = req.body
-        const profile = await pool.query('UPDATE profiles SET name=COALESCE($1,name),bio=COALESCE($2,bio),occupation=COALESCE($3,occupation)WHERE user_id=$4 RETURNING*', [name, bio, occupation, user_id])
-        if (profile.rows.length === 0) {
-            res.status(401).json({
-                msg: "Profile not found"
-            })
-            return
+        const user_id = req.user?.id;
+        if (!user_id) {
+            res.status(401).json({ msg: "Unauthorized" });
+            return;
         }
+
+        const { name, age, city, locality, bio, occupation, budget_min, budget_max, lifestyle_tags } = req.body;
+
+        if (age !== undefined && age !== null && Number(age) < 18) {
+            res.status(400).json({ msg: "Age must be at least 18" });
+            return;
+        }
+        if (budget_min !== undefined && budget_max !== undefined && Number(budget_min) > Number(budget_max)) {
+            res.status(400).json({ msg: "budget_min cannot be greater than budget_max" });
+            return;
+        }
+        if (lifestyle_tags !== undefined && !Array.isArray(lifestyle_tags)) {
+            res.status(400).json({ msg: "lifestyle_tags must be an array" });
+            return;
+        }
+
+        const profile = await pool.query(
+            `UPDATE profiles SET
+                name        = COALESCE($1, name),
+                age         = COALESCE($2, age),
+                city        = COALESCE($3, city),
+                locality    = COALESCE($4, locality),
+                bio         = COALESCE($5, bio),
+                occupation  = COALESCE($6, occupation),
+                budget_min  = COALESCE($7, budget_min),
+                budget_max  = COALESCE($8, budget_max),
+                lifestyle_tags = COALESCE($9, lifestyle_tags)
+             WHERE user_id = $10
+             RETURNING *`,
+            [
+                name        ?? null,
+                age         ?? null,
+                city        ?? null,
+                locality    ?? null,
+                bio         ?? null,
+                occupation  ?? null,
+                budget_min  ?? null,
+                budget_max  ?? null,
+                lifestyle_tags ? JSON.stringify(lifestyle_tags) : null,
+                user_id,
+            ]
+        );
+
+        if (profile.rows.length === 0) {
+            res.status(404).json({ msg: "Profile not found" });
+            return;
+        }
+
         res.status(200).json({
-            msg: "profile updated",
-            profile: profile.rows[0]
-        })
-        return
+            msg: "Profile updated successfully",
+            profile: profile.rows[0],
+        });
     } catch (error) {
-        res.status(500).json({
-            msg: "internal server error"
-        })
+        console.error("updateProfile error:", error);
+        res.status(500).json({ msg: "Internal server error" });
     }
-}
+};
 
 export const getProfileById = async (req: Request, res: Response) => {
     try {
