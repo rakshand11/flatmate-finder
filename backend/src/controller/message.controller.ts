@@ -1,5 +1,7 @@
 import type { Request, Response } from "express"
 import pool from "../db.js"
+import { verifyMatchAccess } from "../utils/match.util.js"
+import { emitNewMessage, emitMessagesRead } from "../socket/index.js"
 
 export const sendMessage = async (req: Request, res: Response) => {
     try {
@@ -26,15 +28,9 @@ export const sendMessage = async (req: Request, res: Response) => {
         }
 
         // ✅ check if user belongs to this match
-        const match = await pool.query(
-            `SELECT id FROM matches 
-             WHERE id = $1 
-             AND (user1_id = $2 OR user2_id = $2) 
-             AND is_active = true`,
-            [match_id, sender_id]
-        )
+        const match = await verifyMatchAccess(match_id, sender_id)
 
-        if (match.rows.length === 0) {
+        if (!match) {
             return res.status(403).json({
                 msg: "Match not found or access denied"
             })
@@ -47,6 +43,10 @@ export const sendMessage = async (req: Request, res: Response) => {
              RETURNING *`,
             [match_id, sender_id, content.trim()]
         )
+
+        // ✅ broadcast to everyone in the match room (sender included) so all
+        // connected clients render the new message live, no extra REST round trip
+        emitNewMessage(match_id, message.rows[0])
 
         return res.status(201).json({
             msg: "Message sent successfully",
@@ -71,7 +71,8 @@ export const getMessages = async (req: Request, res: Response) => {
             return res.status(401).json({ msg: "Unauthorized" })
         }
 
-        const { match_id } = req.params
+        const { match_id: rawMatchId } = req.params
+        const match_id = Array.isArray(rawMatchId) ? rawMatchId[0] : rawMatchId
 
         if (!match_id) {
             return res.status(400).json({
@@ -84,15 +85,9 @@ export const getMessages = async (req: Request, res: Response) => {
         const offset = parseInt(req.query.offset as string) || 0
 
         // ✅ verify user is part of match
-        const match = await pool.query(
-            `SELECT id FROM matches 
-             WHERE id = $1 
-             AND (user1_id = $2 OR user2_id = $2)
-             AND is_active = true`,
-            [match_id, user_id]
-        )
+        const match = await verifyMatchAccess(match_id, user_id)
 
-        if (match.rows.length === 0) {
+        if (!match) {
             return res.status(403).json({
                 msg: "Match not found or you are not part of this match"
             })
@@ -117,14 +112,21 @@ export const getMessages = async (req: Request, res: Response) => {
         )
 
         // ✅ mark messages as read (only others' messages)
-        await pool.query(
+        const updated = await pool.query(
             `UPDATE messages 
              SET is_read = true 
              WHERE match_id = $1 
              AND sender_id != $2
-             AND is_read = false`,
+             AND is_read = false
+             RETURNING id`,
             [match_id, user_id]
         )
+
+        // ✅ if any messages just got marked read, tell the room so the original
+        // sender's UI can flip their ✓ to ✓✓ live
+        if (updated.rows.length > 0) {
+            emitMessagesRead(match_id, user_id)
+        }
 
         return res.status(200).json({
             msg: "Messages fetched successfully",
