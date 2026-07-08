@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
+import { socket } from "../socket";
 
 const FONT_IMPORT = `
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
@@ -46,8 +47,11 @@ export default function ChatPage() {
     const [content, setContent] = useState("");
     const [loading, setLoading] = useState(true);
     const [myId, setMyId] = useState("");
+    const [otherTyping, setOtherTyping] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+    // ── Initial load: who am I, and the message history ──
     useEffect(() => {
         API.get("/profile/get")
             .then((res) => setMyId(res.data.profile?.user_id || ""))
@@ -59,6 +63,41 @@ export default function ChatPage() {
             .finally(() => setLoading(false));
     }, [match_id]);
 
+    // ── Socket wiring: join the match room, listen for live events ──
+    useEffect(() => {
+        if (!match_id) return;
+
+        socket.emit("match:join", match_id);
+
+        const handleNewMessage = (msg: Message) => {
+            // Guard against duplicates in case of reconnect/replay
+            setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
+            setOtherTyping(false);
+        };
+
+        const handleTyping = ({ user_id, isTyping }: { user_id: string; isTyping: boolean }) => {
+            if (user_id !== myId) setOtherTyping(isTyping);
+        };
+
+        const handleRead = () => {
+            // Someone in this match read messages — flip our sent messages to ✓✓
+            setMessages((prev) => prev.map((m) => (m.sender_id === myId ? { ...m, is_read: true } : m)));
+        };
+
+        socket.on("chat:message", handleNewMessage);
+        socket.on("chat:typing", handleTyping);
+        socket.on("chat:read", handleRead);
+
+        return () => {
+            socket.emit("match:leave", match_id);
+            socket.off("chat:message", handleNewMessage);
+            socket.off("chat:typing", handleTyping);
+            socket.off("chat:read", handleRead);
+        };
+        // myId is read inside the handlers above; re-subscribing once it's known
+        // keeps the "is this my own message" checks correct.
+    }, [match_id, myId]);
+
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
@@ -67,12 +106,24 @@ export default function ChatPage() {
         e.preventDefault();
         if (!content.trim()) return;
         try {
-            const res = await API.post("/message/send-message", { match_id, content });
-            setMessages((prev) => [...prev, res.data.message]);
+            // We don't append the message locally here — the server broadcasts it
+            // back over the socket to everyone in the room, sender included, so it
+            // shows up via handleNewMessage above. Keeps a single source of truth.
+            await API.post("/message/send-message", { match_id, content });
             setContent("");
+            socket.emit("chat:typing", { match_id, isTyping: false });
         } catch (err) {
             console.error(err);
         }
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setContent(e.target.value);
+        socket.emit("chat:typing", { match_id, isTyping: true });
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => {
+            socket.emit("chat:typing", { match_id, isTyping: false });
+        }, 1200);
     };
 
     if (loading)
@@ -154,7 +205,7 @@ export default function ChatPage() {
                         style={{ fontFamily: "'Space Mono', monospace" }}
                     >
                         <span className="h-1.5 w-1.5 rounded-full bg-[#C8FF4D] animate-pulse" />
-                        Active now
+                        {otherTyping ? "typing…" : "Active now"}
                     </p>
                 </div>
 
@@ -258,7 +309,7 @@ export default function ChatPage() {
                 <form onSubmit={sendMessage} className="flex items-center gap-3">
                     <input
                         value={content}
-                        onChange={(e) => setContent(e.target.value)}
+                        onChange={handleInputChange}
                         placeholder="Type a message…"
                         className="flex-1 rounded-2xl border border-[#2E2640] bg-[#211C2E] px-5 py-3 text-sm text-[#F4F1FF] placeholder-[#6E6585] focus:outline-none focus:ring-2 focus:ring-[#C8FF4D]/40 focus:border-[#C8FF4D]/60 transition-all duration-150"
                     />
