@@ -14,8 +14,8 @@ interface Match {
     occupation: string;
     photo_url?: string;
     matched_at: string;
-    lifestyle_tags?: string[]; // optional — renders if backend provides it
-    last_message_at?: string; // optional — used to mark a match as "Chatting"
+    lifestyle_tags?: string[];
+    last_message_at?: string; 
 }
 
 type FilterTab = "all" | "new" | "chatting";
@@ -72,7 +72,6 @@ export default function MatchesPage() {
         return true;
     });
 
-    // ── Loading ──────────────────────────────────────────────────────────────
     if (loading)
         return (
             <div

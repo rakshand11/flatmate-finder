@@ -9,6 +9,9 @@ import { messageRouter } from "./route/message.route.js"
 import cors from "cors"
 import { matchRouter } from "./route/match.route.js"
 import https from "https"
+import http from "http"
+import { initSocket } from "./socket/index.js"
+import { corsOrigins } from "./config/cors.js"
 dotenv.config()
 
 const app = express()
@@ -27,7 +30,7 @@ const connectToDatabase = async () => {
 connectToDatabase()
 
 app.use(cors({
-    origin: ["http://localhost:5174", "https://flatmate.rakshand.site"],
+    origin: corsOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"]
@@ -45,7 +48,11 @@ app.use("/swipes", swipeRouter)
 app.use("/message", messageRouter)
 app.use("/matches", matchRouter)
 
-app.listen(PORT, () => {
+// Express and Socket.IO share one underlying HTTP server so they run on the same port.
+const server = http.createServer(app)
+initSocket(server)
+
+server.listen(PORT, () => {
     console.log(`server is running on port ${PORT}`)
     setInterval(() => {
         https.get("https://flatmate-finder-picx.onrender.com/health", (res) => {
